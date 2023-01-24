@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: py-app
+  template:
+    metadata:
+      labels:
+        app: py-app
+    spec:
+      containers:
+      - name: py-app
+        image: py_app:latest
+        ports:
+        - containerPort: 5002
+        env:
+        - name: POSTGRES_USER
+          value: "user"
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        - name: POSTGRES_HOST
+          value: "host"
+        - name: POSTGRES_PORT
+          value: "port"
+        - name: POSTGRES_DBNAME
+          value: "dbname"

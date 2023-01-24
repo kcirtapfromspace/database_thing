@@ -3,31 +3,45 @@ kind: Deployment
 metadata:
   namespace: default
   labels:
-    app.kubernetes.io/name: tta-db
-  name: tta-db
+    app.kubernetes.io/name: postgres-db
+  name: postgres-db
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: tta-db
+      app.kubernetes.io/name: postgres-db
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: tta-db
+        app.kubernetes.io/name: postgres-db
     spec:
       containers:
         - args: ["postgres", "-c", "max_connections=1000"]
           env:
-            - name: POSTGRES_DB
-              value: tta
-            - name: POSTGRES_PASSWORD
-              value: postgres
-            - name: POSTGRES_USER
-              value: postgres
-          image: tta-db
-          name: tta-db
+          - name: POSTGRES_USER
+            valueFrom:
+                  secretKeyRef:
+                    name: postgres-secret
+                    key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+                  secretKeyRef:
+                    name: postgres-secret
+                    key: POSTGRES_PASSWORD
+          - name: POSTGRES_HOST
+            valueFrom:
+                  secretKeyRef:
+                    name: postgres-secret
+                    key: POSTGRES_HOST
+          - name: POSTGRES_PORT
+            valueFrom:
+                  secretKeyRef:
+                    name: postgres-secret
+                    key: POSTGRES_PORT
+          image: psql_db:latest
+          name: postgres-db
           ports:
-            - name: tta-psql
+            - name: postgres-psql
               containerPort: 5432
               protocol: TCP
       restartPolicy: Always

@@ -1,0 +1,26 @@
+ARG GO_VERSION=1.19.5
+FROM golang:${GO_VERSION}-alpine as build
+
+# Copy the source code to the container
+COPY ./ops/dev-stack/go_loader/src/ /go/src/app/
+# Set the working directory
+WORKDIR /go/src/app
+RUN go mod download 
+# Build the Go service
+RUN CGO_ENABLED=0 go test -timeout 30s -v 
+# Build the executable
+RUN CGO_ENABLED=0 go build -o /go/bin/app
+
+
+FROM gcr.io/distroless/static-debian11 AS final
+# Create a non-root user
+USER nonroot:nonroot
+# Copy the binary from the build stage
+COPY --from=build --chown=nonroot:nonroot /go/bin/app /
+COPY --from=build --chown=nonroot:nonroot /go/src/app/templates /templates
+COPY --from=build --chown=nonroot:nonroot /go/src/app/style /style
+# Expose the port the service will run on
+EXPOSE 8000
+
+# Start the Go service
+ENTRYPOINT ["/app"]
