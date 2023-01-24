@@ -1,0 +1,5 @@
+# Tiltfile
+docker_build('tta-db', '.', dockerfile='Dockerfiles/Dockerfile.tta-db')
+k8s_yaml(kustomize("./ops/dev-stack"))
+k8s_resource('tta-db', port_forwards=[5432], labels="tta-db")
+
