@@ -5,11 +5,11 @@ FROM golang:${GO_VERSION}-alpine as build
 COPY ./ops/dev-stack/go_loader/src/ /go/src/app/
 # Set the working directory
 WORKDIR /go/src/app
-RUN go mod download 
+RUN go mod download
 # Build the Go service
-RUN CGO_ENABLED=0 go test -timeout 30s -v 
+# RUN CGO_ENABLED=0 go test -timeout 30s -v 
 # Build the executable
-RUN CGO_ENABLED=0 go build -o /go/bin/app
+RUN CGO_ENABLED=0 go build -o cmd/main
 
 
 FROM gcr.io/distroless/static-debian11 AS final

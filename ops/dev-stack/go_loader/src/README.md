@@ -1,0 +1,6 @@
+# Logging
+This code is defining a package named "logger" which is used for logging in the main go package. It is importing the "log" and "time" packages as well as the "go.uber.org/zap" package, which is a logging framework for Go.
+
+The InitializeLogger function creates a new production logger using the zap package and assigns it to the variable Logger. The function also uses the logger's Sugar method to log a message at the "info" level, providing structured context as key-value pairs. The defer statement ensures that the logger's Sync method is called before the function returns, ensuring that any buffered log entries are written to their final destination.
+
+The LoggingMiddleware function is defined to return a gin.HandlerFunc, which is a function that takes a pointer to a gin.Context struct and logs request details such as method, URL, status, and elapsed time. This function uses the Logger variable's Info method to log a message at the "info" level and providing structured context as key-value pairs.
