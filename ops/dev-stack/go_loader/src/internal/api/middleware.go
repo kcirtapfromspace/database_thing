@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func LoggingMiddleware() gin.HandlerFunc {
@@ -22,6 +22,28 @@ func LoggingMiddleware() gin.HandlerFunc {
     }
 }
 
+func Recovery(errorHandler func(*gin.Context, error)) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        // catch any panics and handle the error
+        defer func() {
+            if r := recover(); r != nil {
+                var err error
+                switch x := r.(type) {
+                case string:
+                    err = errors.NewError(x, http.StatusInternalServerError)
+                case error:
+                    err = x
+                default:
+                    err = errors.NewError("Unknown error", http.StatusInternalServerError)
+                }
+                // handle the error
+                errorHandler(c, err)
+            }
+        }()
+        // continue with the request handlers
+        c.Next()
+    }
+}
 
 // AuthenticationMiddleware checks if the user is authenticated
 func AuthenticationMiddleware() gin.HandlerFunc {
