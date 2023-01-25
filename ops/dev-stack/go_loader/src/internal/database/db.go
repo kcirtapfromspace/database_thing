@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"fmt"
@@ -9,12 +9,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func openDB() (*sqlx.DB, error) {
+func openDB(dbname string) (*sqlx.DB, error) {
     user := os.Getenv("POSTGRES_USER")
     password := os.Getenv("POSTGRES_PASSWORD")
     host := os.Getenv("POSTGRES_HOST")
     port := os.Getenv("POSTGRES_PORT")
-    dbname := os.Getenv("POSTGRES_DBNAME")
     // check if the environment variables are set 
     if user == "" || password == "" || host == "" || port == "" || dbname == "" {
         log.Fatal("Missing environment variables")
