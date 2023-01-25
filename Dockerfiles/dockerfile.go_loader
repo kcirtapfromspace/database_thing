@@ -9,7 +9,7 @@ RUN go mod download
 # Build the Go service
 # RUN CGO_ENABLED=0 go test -timeout 30s -v 
 # Build the executable
-RUN CGO_ENABLED=0 go build -o cmd/main
+RUN CGO_ENABLED=0 go build -o 
 
 
 FROM gcr.io/distroless/static-debian11 AS final

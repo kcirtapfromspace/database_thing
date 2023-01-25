@@ -21,6 +21,9 @@ type Config struct {
 
     // LogLevel is the level of logging for the application
     LogLevel string
+
+    // Port is the port the application is running on
+    Port int64
 }
 
 
@@ -32,6 +35,7 @@ func Load() (config Config, err error) {
     config.VolumePath = os.Getenv("VOLUME_PATH")
     config.MaxFileSize = maxFileSize
     config.Debug = isDebug
+    config.Port = 8000
     // Check if all the required environment variables are set
     if config.DatabaseURL == "" || config.MaxFileSize == 0 || config.VolumePath == "" || config.LogLevel == "" {
         return config, fmt.Errorf("one or more required environment variables are not set")

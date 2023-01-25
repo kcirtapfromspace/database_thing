@@ -3,6 +3,7 @@ package handlers
 import (
 	"app/validation"
 	"encoding/csv"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -10,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/config"
-	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/pkg/errors"
 	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/pkg/logger"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/pkg/volume"
 )
 
 // Upload handles the file upload and data insertion
