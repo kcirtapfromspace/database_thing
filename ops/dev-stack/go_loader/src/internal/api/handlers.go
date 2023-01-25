@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"app/validation"
 	"encoding/csv"
 	"io"
 	"net/http"
@@ -8,11 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/kcirtapfromspace/database_thing/internal/config"
-	"github.com/kcirtapfromspace/database_thing/internal/errors"
-	"github.com/kcirtapfromspace/database_thing/internal/logger"
-	"github.com/kcirtapfromspace/database_thing/internal/validation"
-	"github.com/kcirtapfromspace/database_thing/internal/volume"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/config"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/pkg/errors"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/pkg/logger"
 )
 
 // Upload handles the file upload and data insertion

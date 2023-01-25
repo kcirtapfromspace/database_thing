@@ -1,17 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/kcirtapfromspace/database_thing/internal/api/handlers"
-	"github.com/kcirtapfromspace/database_thing/internal/api/middleware"
-	"github.com/kcirtapfromspace/database_thing/internal/api/routes"
-	"github.com/kcirtapfromspace/database_thing/internal/config"
-	"github.com/kcirtapfromspace/database_thing/pkg/errors"
-	"github.com/kcirtapfromspace/database_thing/pkg/logger"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/config"
 )
 
 func main() {

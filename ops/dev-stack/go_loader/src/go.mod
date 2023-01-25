@@ -1,20 +1,24 @@
-module github.com/kcirtapfromspace/database_thing
+module github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src
 
 go 1.19
 
-
-require(
-
+require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.7
+	go.uber.org/zap v1.24.0
+)
+
+require (
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 )
 
 require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-playground/locales v0.14.0 // indirectr
+	github.com/go-playground/locales v0.14.0 // indirect; indirectr
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/goccy/go-json v0.9.11 // indirect
