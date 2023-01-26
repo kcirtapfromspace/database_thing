@@ -1,6 +1,6 @@
 ARG GO_VERSION=1.19.5
 FROM golang:${GO_VERSION}-alpine as build
-
+RUN apk add --no-cache git
 # Copy the source code to the container
 COPY ./ops/dev-stack/go_loader/src/ /go/src/app/
 # Set the working directory
