@@ -6,6 +6,9 @@ import (
 	"app/validation"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/file"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/upload"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/validation"
 )
 
 // SetupRoutes sets up the application's routes
