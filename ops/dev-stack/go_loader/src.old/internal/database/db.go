@@ -27,3 +27,12 @@ func openDB(dbname string) (*sqlx.DB, error) {
     return db, err
 
 }
+
+func CreateTable(db *sqlx.DB, tableName string, schema string) error {
+    // Create the table
+    _, err := db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", tableName, schema))
+    if err != nil {
+        return fmt.Errorf("failed to create table %s: %s", tableName, err)
+    }
+    return nil
+}

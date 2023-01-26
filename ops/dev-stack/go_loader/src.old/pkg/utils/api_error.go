@@ -1,4 +1,4 @@
-package error
+package api_error
 
 import (
 	"errors"

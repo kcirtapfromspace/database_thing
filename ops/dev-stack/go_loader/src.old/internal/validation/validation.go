@@ -12,7 +12,7 @@ import (
 const maxFileSize int64 = 1024 * 1024 * 5 // 5MB
 
 // validateRequest validates the request data
-func validateRequest(c *gin.Context) (string, string, error) {
+func ValidateRequest(c *gin.Context) (string, string, error) {
     storageMethod := c.PostForm("storage_method")
     customName := c.PostForm("custom_name")
     if storageMethod != "database" {
@@ -25,7 +25,7 @@ func validateRequest(c *gin.Context) (string, string, error) {
 }
 
 // validateFile validates the file
-func validateFile(c *gin.Context, file *multer.File) error {
+func ValidateFile(c *gin.Context, file *multer.File) error {
     if !strings.HasSuffix(file.Filename, ".csv") {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file format"})
         return fmt.Errorf("Invalid file format")
