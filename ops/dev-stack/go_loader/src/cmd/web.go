@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kcirtapfromspace/database_thing/ops/devstack/go_loader/src/cmd/db"
+	"github.com/kcirtapfromspace/database_thing/ops/dev-stack/go_loader/src/internal/db"
 	_ "github.com/lib/pq"
 )
 
