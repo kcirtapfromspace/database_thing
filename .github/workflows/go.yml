@@ -30,7 +30,7 @@ jobs:
       env:
         GOPATH: ${{ github.workspace }}
         GOBIN: ${{ github.workspace }}/bin
-        GO111MODULE: '1'
+
 
     - name: Build
       run: go build -v main.go
