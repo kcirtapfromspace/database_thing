@@ -18,6 +18,6 @@ jobs:
       env:
         GO111MODULE: on
     - name: Build
-      run: go build ${{ github.workspace }}/ops/dev-stack/go_loader/src
+      run: go build ${{ github.workspace }}/ops/dev-stack/go_loader/src/main.go
     - name: Test
       run: go test -v ./...
