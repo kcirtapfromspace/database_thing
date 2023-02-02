@@ -23,6 +23,14 @@ spec:
       labels:
         app: go-loader
     spec:
+      initContainers:
+    # Mounts the voulme as writable for the nonroot user (65532) in the final build image
+      - name: chown-data
+        image: busybox:latest
+        command: ["chown", "-R", "65532:65532", "/data"]
+        volumeMounts:
+        - name: go-loader-data
+          mountPath: /data
       containers:
       - name: go-loader
         image: go_loader:latest
@@ -31,6 +39,10 @@ spec:
         volumeMounts:
         - name: go-loader-data
           mountPath: /data
+        securityContext:
+          runAsUser: 65532
+          runAsGroup: 65532
+          fsGroup: 65532
         env:
         - name: VOLUME_MOUNT_PATH
           value: "/data"
@@ -54,6 +66,13 @@ spec:
                 secretKeyRef:
                   name: go-loader-secret
                   key: POSTGRES_PORT
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
       volumes:
       - name: go-loader-data
         persistentVolumeClaim:

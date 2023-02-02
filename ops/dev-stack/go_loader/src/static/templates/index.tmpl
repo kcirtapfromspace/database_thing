@@ -3,10 +3,13 @@
   <head>
     <title>Upload CSV File</title>
     <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
     <div class="container">
-      <h1>Upload CSV File</h1>
+      <header class="header">
+        <h1>Upload CSV File</h1>
+      </header>
       <form method="post" enctype="multipart/form-data" action="/upload">
         <div class="form-group">
           <input type="file" name="file" id="file" required>
@@ -26,5 +29,7 @@
         <div class="alert alert-danger">{{.Error}}</div>
       {{end}}
     </div>
+    <script src="/static/js/background.min.js"></script>
+    <script src="/static/js/progress.min.js"></script>
   </body>
 </html>

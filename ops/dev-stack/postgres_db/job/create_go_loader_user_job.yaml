@@ -26,7 +26,7 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: POSTGRES_PASSWORD
-        - name: GO_LOADER_PASSWORD
+        - name: GO_LOADER_PG_PASSWORD
           valueFrom:
             secretKeyRef:
               name: go-loader-secret
