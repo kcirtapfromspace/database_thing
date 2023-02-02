@@ -18,7 +18,7 @@ jobs:
       env:
         GO111MODULE: on
     - name: Tidy
-      run: go mod tidy
+      run: go get -u ./...
     - name: Build
       run: go build ${{ github.workspace }}/ops/dev-stack/go_loader/src/main.go
     - name: Test
