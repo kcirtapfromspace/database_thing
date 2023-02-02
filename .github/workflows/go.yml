@@ -7,9 +7,6 @@ on: [push, pull_request]
 
 jobs:
   build:
-    defaults:
-      run:
-        working-directory: ${{ env.GOPATH }}/ops/dev-stack/go_loader/src
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
