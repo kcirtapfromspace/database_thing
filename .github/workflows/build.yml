@@ -1,52 +1,51 @@
-name: Build and Test
-on:
-  push:
-    branches:
-      - main  
+# name: Build and Test
+# on:
+#   push:
+#     branches:
+#       - main  
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - 
-      name: Test Go code
-      uses: actions/setup-go@v3
-      with:
-        go-version: latest
-      env:
-        GO111MODULE: on
-      working-directory: ops/dev-stack/go_loader
-      run: go test ./...
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Test Go code
+#       uses: actions/setup-go@v3
+#       with:
+#         go-version: latest
+#       env:
+#         GO111MODULE: on
+#       working-directory: ops/dev-stack/go_loader
+#       run: go test ./...
 
-    # Install all the dependencies
-    - name: Install dependencies
-      run: |
-        go version
-        go get -u golang.org/x/lint/golint
+#     # Install all the dependencies
+#     - name: Install dependencies
+#       run: |
+#         go version
+#         go get -u golang.org/x/lint/golint
         
-    # Run build of the application
-    - name: Run build
-      run: go build . 
+#     # Run build of the application
+#     - name: Run build
+#       run: go build . 
       
-    # Run vet & lint on the code
-    - name: Run vet & lint
-      run: |
-        go vet .
-        golint .
+#     # Run vet & lint on the code
+#     - name: Run vet & lint
+#       run: |
+#         go vet .
+#         golint .
 
 
-    - name: Test Python code
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-      working-directory: ops/dev-stack/py_app
-      run: |
-        pip install -r requirements.txt
-        python -m unittest discover
+#     - name: Test Python code
+#       uses: actions/setup-python@v2
+#       with:
+#         python-version: 3.8
+#       working-directory: ops/dev-stack/py_app
+#       run: |
+#         pip install -r requirements.txt
+#         python -m unittest discover
 
-    - name: Notify team
-      uses: peter-evans/email-notify@v1
-      with:
-        to: team@example.com
-        subject: Build and test completed successfully
-        message: The build and test have completed successfully.
+#     - name: Notify team
+#       uses: peter-evans/email-notify@v1
+#       with:
+#         to: team@example.com
+#         subject: Build and test completed successfully
+#         message: The build and test have completed successfully.
