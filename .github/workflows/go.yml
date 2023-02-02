@@ -17,8 +17,7 @@ jobs:
         go-version: '1.19'
       env:
         GO111MODULE: on
-    - run: cd ${{ github.workspace }}/ops/dev-stack/go_loader/src
     - name: Build
-      run: go build .
+      run: go build ${{ github.workspace }}/ops/dev-stack/go_loader/src
     - name: Test
       run: go test -v ./...
