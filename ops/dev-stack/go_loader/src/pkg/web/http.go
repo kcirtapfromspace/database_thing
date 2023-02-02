@@ -1,6 +1,8 @@
 package web
 
 import (
+	"expvar"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -12,6 +14,21 @@ import (
 
 	_ "github.com/lib/pq"
 )
+
+func expvarHandler(c *gin.Context) {
+	w := c.Writer
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	fmt.Fprintf(w, "{\n")
+	first := true
+	expvar.Do(func(kv expvar.KeyValue) {
+		if !first {
+			fmt.Fprintf(w, ",\n")
+		}
+		first = false
+		fmt.Fprintf(w, "%q: %s", kv.Key, kv.Value)
+	})
+	fmt.Fprintf(w, "\n}\n")
+}
 
 var Module = fx.Module("web", fx.Provide(ListenAndServe))
 
@@ -26,19 +43,38 @@ func ListenAndServe(address string) *Server {
 	// 		log.Println(err)
 	// 	}
 	// }()
-	r := gin.Default()
-	r.LoadHTMLGlob("static/templates/*")
-	r.Static("/static", "./static")
+	r := gin.New()
+	// r.Use(gin.Recovery())
+	// if gin.IsDebugging() {
+	// 	r.HTMLRender = r.NewDebug("resources")
+	// } else {
+	// 	r.HTMLRender = r.NewProduction("resources")
+	// }
+	r.Static("/static", "/static")
+	r.LoadHTMLGlob("./static/templates/*")
+	r.GET("/debug/vars", expvarHandler)
 	// Serve file upload form
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "upload.tmpl", nil)
+		c.HTML(http.StatusOK, "index.tmpl", nil)
 	})
+
 	// Handle file upload
 	r.POST("/upload", func(c *gin.Context) {
 		file, _ := c.FormFile("file")
-		dst := "./data/files/" + file.Filename
+		// Check file type
+		allowedTypes := map[string]bool{
+			"text/csv": true,
+			// "text/css":        true,
+			// "text/javascript": true,
+		}
+		if !allowedTypes[file.Header.Get("Content-Type")] {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "File type not allowed"})
+			return
+		}
+		dst := "./data/"
+		// dst := "/tmp/" //+ file.Filename
 		fileName := file.Filename
-		if filepkg.FileUploadHandler(c, file, fileName, dst) {
+		if filepkg.FileUploadHandler(c, file, dst, fileName) {
 			// Send success message to user
 			c.JSON(http.StatusOK, gin.H{"message": "File uploaded and processed successfully"})
 		} else {

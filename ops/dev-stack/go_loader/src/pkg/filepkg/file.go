@@ -21,17 +21,23 @@ import (
 var Module = fx.Module("file", fx.Provide(FileUploadHandler))
 
 func FileUploadHandler(c *gin.Context, file *multipart.FileHeader, dst string, fileName string) bool {
-	// Upload file
-	c.SaveUploadedFile(file, dst)
-
+	if _, err := os.Stat("/data"); os.IsNotExist(err) {
+		os.Mkdir(dst, os.ModePerm)
+	}
+	dst = dst + fileName
+	// Save file to disk
+	if err := c.SaveUploadedFile(file, dst); err != nil {
+		c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
+		return false
+	}
 	// Process CSV file
 	if err := ProcessCSVFile(dst, fileName); err != nil {
-		c.String(http.StatusBadRequest, fmt.Sprintf("Error processing CSV file: %s", err))
+		c.String(http.StatusBadRequest, fmt.Sprintf("error processing CSV file: %s", err))
 		return false
 	}
 
 	// Respond with success message
-	c.String(http.StatusOK, "File uploaded and processed successfully")
+	c.String(http.StatusOK, fmt.Sprintf("file %s uploaded successfully with fields .", file.Filename))
 	return true
 }
 
@@ -51,50 +57,82 @@ func Remove(filePath string) error {
 	return os.Remove(filePath)
 }
 
-func ProcessCSVFile(filePath string, fileName string) error {
+func ProcessCSVFile(dst string, fileName string) error {
+	columnTypes := make(map[string]string)
 	tableName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	cleanTableName := SanitizeName(tableName)
 	if tableName == "" {
-		return fmt.Errorf("Error: empty file name")
+		return fmt.Errorf("error: empty file name")
 	}
 	dbConnect, err := db.ConnectDB()
 	if err != nil {
-		return fmt.Errorf("Error connecting to the database: %s", err)
+		return fmt.Errorf("error connecting to the database: %s", err)
 	}
 	defer dbConnect.Close()
 
-	// Open CSV file
-	file, err := os.Open(filePath)
+	// Open CSV fil
+	file, err := os.Open(dst)
 	if err != nil {
-		return fmt.Errorf("Error opening CSV file: %s", err)
+		return fmt.Errorf("error opening CSV file: %s", err)
 	}
 	defer file.Close()
 
 	// Read CSV file into a byte slice
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		return fmt.Errorf("Error reading CSV file: %s", err)
+		return fmt.Errorf("error reading CSV file: %s", err)
 	}
 
 	// Use functions from db package to insert records
 	records, err := ReadCSV(data)
 	if err != nil {
-		return fmt.Errorf("Error reading CSV file: %s", err)
+		return fmt.Errorf("error reading CSV file: %s", err)
+	}
+	records[0] = db.SanitizeHeaders(records[0])
+
+	// Use functions from db package determine column name for map columnTypes
+	columnNames := db.DetermineColumnNames(records)
+	if err != nil {
+		return fmt.Errorf("error determining the column names and types of csv file: %s", err)
+	}
+	columnNamesSlice := make([]string, 0, len(columnNames))
+	for key := range columnNames {
+		columnNamesSlice = append(columnNamesSlice, key)
+	}
+	columnTypes = db.InferColumnTypes(records, columnNamesSlice)
+
+	// Use functions from db package determine update map columnTypes with appropriate column types
+	if err != nil {
+		return fmt.Errorf("error determining the column types of csv file: %s", err)
 	}
 
 	// Use functions from db package to create table
-	if err := db.CreateTable(dbConnect, cleanTableName, records[0]); err != nil {
-		return fmt.Errorf("Error creating table: %s", err)
+	if err := db.CreateTable(dbConnect, cleanTableName, records[0], columnTypes); err != nil {
+		return fmt.Errorf("error creating table: %s", err)
+	}
+
+	interfaceRecords := make([][]interface{}, len(records[1:]))
+	for i, record := range records[1:] {
+		interfaceRecord := make([]interface{}, len(record))
+		for j, item := range record {
+			interfaceRecord[j] = item
+		}
+		interfaceRecords[i] = interfaceRecord
+	}
+
+	columnNamesSlice = make([]string, 0, len(columnNames))
+	for columnName := range columnNames {
+		columnNamesSlice = append(columnNamesSlice, columnName)
 	}
 
 	// Use functions from db package to insert records
-	if err := db.InsertRecord(dbConnect, cleanTableName, records[1:]); err != nil {
-		return fmt.Errorf("Error inserting records: %s", err)
+	if err := db.PopulateTable(dbConnect, cleanTableName, interfaceRecords, columnNamesSlice, 1000); err != nil {
+		return fmt.Errorf("error inserting records: %s", err)
 	}
 
 	// Use functions from file package to remove temp file
-	if err := Remove(filePath); err != nil {
-		return fmt.Errorf("Error removing temp file: %s", err)
+	if err := Remove(dst); err != nil {
+		return fmt.Errorf("error removing temp file: %s", err)
 	}
 
 	return nil

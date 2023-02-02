@@ -14,6 +14,7 @@ type ConfigData struct {
 type Config struct {
 	// DatabaseURL is the URL to connect to the database
 	DatabaseURL string
+
 	// DatabaseURL is the URL to connect to the database
 	DatabasePassword string
 
@@ -57,4 +58,17 @@ func Load() (ConfigData, error) {
 		return ConfigData{}, fmt.Errorf("one or more required environment variables are not set")
 	}
 	return ConfigData{Config: &config, Err: nil}, nil
+	// switch os.Getenv("MODE") {
+	// case "RELEASE":
+	//     gin.SetMode(gin.ReleaseMode)
+
+	// case "DEBUG":
+	//     gin.SetMode(gin.DebugMode)
+
+	// case "TEST":
+	//     gin.SetMode(gin.TestMode)
+
+	// default:
+	//     gin.SetMode(gin.ReleaseMode)
+	// }
 }

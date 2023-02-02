@@ -4,7 +4,8 @@ metadata:
   name: go-loader-sql
 data:
   go-loader.sql: |
-    CREATE USER go_loader WITH PASSWORD '${GO_LOADER_PASSWORD}';
+    # CREATE USER go_loader WITH PASSWORD '${GO_LOADER_PG_PASSWORD}';
+    CREATE USER go_loader WITH PASSWORD 'go_loader';
     GRANT CONNECT ON DATABASE postgres TO go_loader;
     GRANT USAGE ON SCHEMA public TO go_loader;
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO go_loader;
