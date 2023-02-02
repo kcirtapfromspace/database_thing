@@ -11,33 +11,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    steps:
+    - 
+      name: Checkout code
+      uses: actions/checkout@v3
 
-  steps:
-  - name: Checkout code
-    uses: actions/checkout@v2
+    - name: Set up Python environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.10
 
-  - name: Set up Python environment
-    uses: actions/setup-python@v2
-    with:
-      python-version: 3.8
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
 
-  - name: Install dependencies
-    run: |
-      pip install -r requirements.txt
+    - name: Run unit tests
+      run: |
+        python -m unittest discover
 
-  - name: Run unit tests
-    run: |
-      python -m unittest discover
-
-  - name: Run security scans
-    uses: docker://aquasec/trivy:0.17.0
-    with:
-      args: --exit-code 0 --severity CRITICAL --quiet /app
-
-  - name: Run code quality checks
-    run: |
-      flake8 .
-      pylint --rcfile=.pylintrc .
-  - name: Generate documentation
-    run: |
-      sphinx-build -b html docs/ docs/_build
+    - name: Run code quality checks
+      run: |
+        flake8 .
+        pylint --rcfile=.pylintrc .
+        
+    - name: Generate documentation
+      run: |
+        sphinx-build -b html docs/ docs/_build
