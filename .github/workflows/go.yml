@@ -9,15 +9,16 @@ on:
   pull_request:
     branches: [ "main" ]
 
-defaults:
-  run:
-    working-directory: ${{ env.GOPATH }}/ops/dev-stack/go_loader/src
+
 
 jobs:
-  env:
-    GOPATH: ${{ github.workspace }}
-    GOBIN: ${{ github.workspace }}/bin
   build:
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/ops/dev-stack/go_loader/src
+    env:
+      GOPATH: ${{ github.workspace }}
+      GOBIN: ${{ github.workspace }}/bin
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
