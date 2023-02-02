@@ -16,9 +16,6 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/ops/dev-stack/go_loader/src
-    env:
-      GOPATH: ${{ github.workspace }}
-      GOBIN: ${{ github.workspace }}/bin
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -30,6 +27,10 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: '1.19'
+      env:
+        GOPATH: ${{ github.workspace }}
+        GOBIN: ${{ github.workspace }}/bin
+        GO111MODULE: 1
 
     - name: Build
       run: go build -v ops/dev-stack/go_loader/src/main.go
