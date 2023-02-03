@@ -1,0 +1,59 @@
+# Load the extension
+load('ext://snyk', 'snyk')
+
+# Scan Kubernetes YAML files in the "./ops/dev-stack" directory - manually triggered and in informational-only mode
+snyk('./ops/dev-stack', 'iac', 'snyk-iac-manual', mode='info')
+
+# Scan application code dependencies in the current directory - automatically on change and in gating mode
+snyk('.', 'oss', 'snyk-oss-auto', mode='gate', trigger='auto')
+
+# Manually scan Docker builds
+# Set mutable tags for the initial build, Tilt will re-tag with immutable during deploy
+custom_build('psql_db', 'docker build -t $EXPECTED_REF -f Dockerfiles/psql_db.Dockerfile .', ['Dockerfiles/psql_db.Dockerfile'], tag='dev')
+custom_build('py_app', 'docker build -t $EXPECTED_REF -f Dockerfiles/py_app.Dockerfile .', ['Dockerfiles/py_app.Dockerfile'], tag='dev')
+custom_build('go_loader', 'docker build -t $EXPECTED_REF -f Dockerfiles/go_loader.Dockerfile .', ['Dockerfiles/go_loader.Dockerfile'], tag='dev')
+
+# Run snyk manually against the mutable tags, in informational mode, and scan each Dockerfile
+snyk('psql_db:dev', 'container', 'snyk-cnr-manual-psql_db', mode='info', extra_opts='--file=Dockerfiles/psql_db.Dockerfile')
+snyk('py_app:dev', 'container', 'snyk-cnr-manual-py_app', mode='info', extra_opts='--file=Dockerfiles/py_app.Dockerfile')
+snyk('go_loader:dev', 'container', 'snyk-cnr-manual-go_loader', mode='info', extra_opts='--file=Dockerfiles/go_loader.Dockerfile')
+
+# Automatically scan Docker builds
+# Extract the immutable tags on build and write to files in the filesystem
+custom_build('psql_db', 'docker build -t $EXPECTED_REF -f Dockerfiles/psql_db.Dockerfile . && echo $EXPECTED_REF > /tmp/ref-psql_db.txt', ['Dockerfiles/psql_db.Dockerfile'])
+custom_build('py_app', 'docker build -t $EXPECTED_REF -f Dockerfiles/py_app.Dockerfile . && echo $EXPECTED_REF > /tmp/ref-py_app.txt', ['Dockerfiles/py_app.Dockerfile'])
+custom_build('go_loader', 'docker build -t $EXPECTED_REF -f Dockerfiles/go_loader.Dockerfile . && echo $EXPECTED_REF > /tmp/ref-go_loader.txt', ['Dockerfiles/go_loader.Dockerfile'])
+
+# Extract the tag from each file and strip any newlines
+def get_tag_psql_db():
+    return str(read_file('/tmp/ref_psql_db.txt')).rstrip('\n')
+
+def get_tag_py_app():
+return str(read_file('/tmp/ref_py_app.txt')).rstrip('\n')
+
+def get_tag_go_loader():
+return str(read_file('/tmp/ref_go_loader.txt')).rstrip('\n')
+
+#Use the custom_build function to build and scan the Dockerfiles in the Dockerfiles directory
+custom_build('psql_db', 'docker build -t $EXPECTED_REF -f Dockerfiles/Dockerfile_psql_db . && echo $EXPECTED_REF > /tmp/ref_psql_db.txt', ['Dockerfiles'])
+custom_build('py_app', 'docker build -t $EXPECTED_REF -f Dockerfiles/Dockerfile_py_app . && echo $EXPECTED_REF > /tmp/ref_py_app.txt', ['Dockerfiles'])
+custom_build('go_loader', 'docker build -t $EXPECTED_REF -f Dockerfiles/Dockerfile_go_loader . && echo $EXPECTED_REF > /tmp/ref_go_loader.txt', ['Dockerfiles'])
+# Run snyk automatically in informational mode for each built Dockerfile
+snyk(get_tag_psql_db(), 'container', 'snyk-cnr-auto-psql_db', test_deps='/tmp/ref_psql_db.txt', mode='info', extra_opts='--file=Dockerfiles/Dockerfile_psql_db', trigger='auto')
+snyk(get_tag_py_app(), 'container', 'snyk-cnr-auto-py_app', test_deps='/tmp/ref_py_app.txt', mode='info', extra_opts='--file=Dockerfiles/Dockerfile_py_app', trigger='auto')
+snyk(get_tag_go_loader(), 'container', 'snyk-cnr-auto-go_loader', test_deps='/tmp/ref_go_loader.txt', mode='info', extra_opts='--file=Dockerfiles/Dockerfile_go_loader', trigger='auto')
+
+# Apply the Kubernetes manifests using Kustomize
+kustomize_yaml('./ops/dev-stack')
+
+# Create the argo namespace and install Argo Workflows using Helm
+k8s_namespace('argo')
+helm_chart('argo-workflows', 'argo', './ops/dev-stack/argo', values='./ops/dev-stack/argo/values.yaml')
+
+# Set port forwarding rules for the Kubernetes resources
+k8s_resource('postgres-db',
+port_forwards=5432
+)
+k8s_resource('argo-workflows-server',
+port_forwards=2746
+)

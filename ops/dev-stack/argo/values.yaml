@@ -1,0 +1,6 @@
+controller:
+  server:
+    # serviceAccount:
+    #   create: true
+    #   name: argo-server
+    extraArgs: ["--auth-mode=server"]

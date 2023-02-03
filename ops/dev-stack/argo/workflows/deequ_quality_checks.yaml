@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: deequ-quality-checks-
+spec:
+  entrypoint: deequ-container
+  arguments:
+    parameters:
+      - name: database_user
+        value: deequ_quality_checks
+      - name: database_password
+        value: deequ_quality_checks
+      - name: database_host
+        value: postgres-db
+      - name: database_port
+        value: '5432'
+      - name: database_name
+        value: postgres
+  templates:
+  - name: deequ-container
+    container:
+      image: py_app
+      command: [python, "deequ_quality_checks/dyno_deequ.py"]
+      args: []
+      env:
+      - name: database_user
+        value: "{{workflow.parameters.database_user}}"
+      - name: database_password
+        value: "{{workflow.parameters.database_password}}"
+      - name: database_host
+        value: "{{workflow.parameters.database_host}}"
+      - name: database_port
+        value: "{{workflow.parameters.database_port}}"
+      - name: database_name
+        value: "{{workflow.parameters.database_name}}"
+    schedule: "0 0 * * *" # optional field, set this if you want to run the container on a schedule
+  - name: independent-run
+    inputs:
+      parameters:
+      - name: run-time
+    container:
+      image: py_app:local
+      command: [python, "deequ_quality_checks/dyno_deequ.py"]
+      args: []
+      env:
+      - name: database_user
+        value: "{{workflow.parameters.database_user}}"
+      - name: database_password
+        value: "{{workflow.parameters.database_password}}"
+      - name: database_host
+        value: "{{workflow.parameters.database_host}}"
+      - name: database_port
+        value: "{{workflow.parameters.database_port}}"
+      - name: database_name
+        value: "{{workflow.parameters.database_name}}"
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion

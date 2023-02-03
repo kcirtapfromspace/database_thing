@@ -1,6 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+
 resources:
   #go loader
   - go_loader/go_deployment.yaml
@@ -12,8 +13,9 @@ resources:
   - postgres_db/job/create_go_loader_user_job.yaml 
   #py app
   - py_app/py_deployment.yaml
-  - py_app/py_service.yaml
-
+  # - py_app/py_service.yaml
+  #argo
+  # - argo/sa.yaml
 
 secretGenerator:
 # go loader
