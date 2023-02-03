@@ -635,7 +635,12 @@ func PopulateTable(db *sql.DB, tableName string, dataset [][]interface{}, column
 
 		batch := dataset[i:end]
 		for _, record := range batch {
-			_, err = stmt.Exec(record...)
+			// Create a new slice for the arguments to Exec, using the order of the `columnNames` slice
+			args := make([]interface{}, len(columnNames))
+			for j, columnName := range columnNames {
+				args[j] = record[j]
+			}
+			_, err = stmt.Exec(args...)
 			if err != nil {
 				return err
 			}

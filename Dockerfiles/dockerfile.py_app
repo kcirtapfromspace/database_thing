@@ -1,7 +1,7 @@
 FROM python:3.11
-
-COPY src/requirements.txt .
+WORKDIR /nlp_app
+COPY  ./ops/dev-stack/py_app/src/. .
 RUN pip install -U --no-cache-dir -r requirements.txt
 
 
-CMD ["python", "main.py"]
+CMD ["python", "nlp_app.py"]
