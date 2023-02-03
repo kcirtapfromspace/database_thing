@@ -1,4 +1,5 @@
 nltk
 pandas
-matplotlin
+matplotlib
 scikit-learn
+sqlalchemy
