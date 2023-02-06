@@ -33,13 +33,14 @@ spec:
         value: "{{workflow.parameters.database_port}}"
       - name: database_name
         value: "{{workflow.parameters.database_name}}"
+      imagePullPolicy: IfNotPresent
     schedule: "0 0 * * *" # optional field, set this if you want to run the container on a schedule
   - name: independent-run
     inputs:
       parameters:
       - name: run-time
     container:
-      image: py_app:local
+      image: py_app
       command: [python, "deequ_quality_checks/dyno_deequ.py"]
       args: []
       env:
@@ -53,6 +54,7 @@ spec:
         value: "{{workflow.parameters.database_port}}"
       - name: database_name
         value: "{{workflow.parameters.database_name}}"
+      imagePullPolicy: IfNotPresent
   ttlStrategy:
     secondsAfterCompletion: 300
   podGC:

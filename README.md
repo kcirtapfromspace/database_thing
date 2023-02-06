@@ -56,3 +56,12 @@ py_app: deployment and service files
 
 ### Tiltfile
 The Tiltfile is a configuration file used by Tilt to manage the development environment. To use Tilt, you will need to install it on your machine. Tilt download link.
+
+### debug docker images
+
+https://github.com/GoogleContainerTools/distroless
+```
+python3 deequ_quality_checks/dyno_deequ.py
+$ docker run --entrypoint=sh --rm -ti py_app:latest
+$ docker run --entrypoint=sh -ti my_debug_image
+```
