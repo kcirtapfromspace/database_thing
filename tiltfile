@@ -27,24 +27,11 @@ warn('ℹ️ Open {tiltfile_path} in your favorite editor to get started.'.forma
 #
 #   More info: https://docs.tilt.dev/api.html#api.docker_build
 #
-# docker_build('registry.example.com/my-image',
-#              context='.',
-#              # (Optional) Use a custom Dockerfile path
-#              dockerfile='./deploy/app.dockerfile',
-#              # (Optional) Filter the paths used in the build
-#              only=['./app'],
-#              # (Recommended) Updating a running container in-place
-#              # https://docs.tilt.dev/live_update_reference.html
-#              live_update=[
-#                 # Sync files from host to container
-#                 sync('./app', '/src/'),
-#                 # Execute commands inside the container when certain
-#                 # paths change
-#                 run('/src/codegen.sh', trigger=['./app/api'])
-#              ]
-# )
+
+# docker_build('py_app', '.', dockerfile='Dockerfiles/Dockerfile.py_app',  match_in_env_vars=True,extra_tag=["py_app:local"])
 docker_build('psql_db', '.', dockerfile='Dockerfiles/Dockerfile.psql_db')
-docker_build('py_app', '.', dockerfile='Dockerfiles/Dockerfile.py_app',  match_in_env_vars=True,extra_tag=["py_app:local"])
+docker_build('py_ex', '.', dockerfile='Dockerfiles/Dockerfile.gx',  match_in_env_vars=True,extra_tag=["gx:local"])
+docker_build('py_deequ', '.', dockerfile='Dockerfiles/Dockerfile.deequ',  match_in_env_vars=True,extra_tag=["deequ:local"])
 docker_build('go_loader', '.', dockerfile='Dockerfiles/Dockerfile.go_loader')
 # Apply Kubernetes manifests
 #   Tilt will build & push any necessary images, re-deploying your
@@ -57,28 +44,11 @@ docker_build('go_loader', '.', dockerfile='Dockerfiles/Dockerfile.go_loader')
 # Customize a Kubernetes resource
 #   By default, Kubernetes resource names are automatically assigned
 #   based on objects in the YAML manifests, e.g. Deployment name.
-#
-#   Tilt strives for sane defaults, so calling k8s_resource is
-#   optional, and you only need to pass the arguments you want to
-#   override.
-#
-#   More info: https://docs.tilt.dev/api.html#api.k8s_resource
-#
-# k8s_resource('my-deployment',
-#              # map one or more local ports to ports on your Pod
-#              port_forwards=['5000:8080'],
-#              # change whether the resource is started by default
-#              auto_init=False,
-#              # control whether the resource automatically updates
-#              trigger_mode=TRIGGER_MODE_MANUAL
-# )
 k8s_yaml(kustomize("./ops/dev-stack"))
 
 k8s_resource('postgres-db', port_forwards=[5432], labels="psql_db")
-# k8s_resource('py-app', port_forwards=[5002], labels="py_app")
+# k8s_resource('py-app', port_forwards=[5002], labels="py_app",auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
 k8s_resource('go-loader', port_forwards=[8000], labels="go_loader")
-# Tiltfile
-
 
 # Install Argo Workflows
 load('ext://namespace', 'namespace_create')
@@ -94,18 +64,11 @@ k8s_resource("argo-workflows-server", port_forwards=['2746'],  labels="argo")
 k8s_resource("argo-workflows-workflow-controller", labels="argo")
 k8s_resource("create-go-loader-user", labels="psql_db")
 
+# Install Argo Cluster Workflows
+k8s_yaml(helm('./ops/dev-stack/argo/helm/workflows'))
+k8s_resource('py-gx',  labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
+k8s_resource('py-deequ', labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
 
-# Generate Argo Bearer Token
-script = """\
-SECRET=$(kubectl get sa argo-workflows-server --namespace argo -o=jsonpath='{.secrets[0].name}')
-ARGO_TOKEN="Bearer $(kubectl get secret --namespace argo $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
-echo $ARGO_TOKEN > ./.argo-token.txt
-"""
-local_resource("argo-token", script, resource_deps=["create-argo-server-token"],  labels="argo")
-script = """\
-CREATE_TOKEN=$(kubectl create token argo-workflows-server -n argo)
-"""
-local_resource("create-argo-server-token", script, resource_deps=["argo-workflows-server"],  labels="argo")
 
 # Run local commands
 #   Local commands can be helpful for one-time tasks like installing
@@ -113,17 +76,21 @@ local_resource("create-argo-server-token", script, resource_deps=["argo-workflow
 #   for non-containerized services or dependencies.
 #
 #   More info: https://docs.tilt.dev/local_resource.html
-#
-# local_resource('install-helm',
-#                cmd='which helm > /dev/null || brew install helm',
-#                # `cmd_bat`, when present, is used instead of `cmd` on Windows.
-#                cmd_bat=[
-#                    'powershell.exe',
-#                    '-Noninteractive',
-#                    '-Command',
-#                    '& {if (!(Get-Command helm -ErrorAction SilentlyContinue)) {scoop install helm}}'
-#                ]
-# )
+
+# Generate Argo Bearer Token
+# script = """\
+# SECRET=$(kubectl get sa argo-workflows-server --namespace argo -o=jsonpath='{.secrets[0].name}')
+# ARGO_TOKEN="Bearer $(kubectl get secret --namespace argo $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
+# echo $ARGO_TOKEN > ./.argo-token.txt
+# """
+# local_resource("argo-token", script, resource_deps=["create-argo-server-token"],  labels="argo")
+script = """\
+CREATE_TOKEN="Bearer $(kubectl create token argo-workflows-server -n argo)"
+echo $CREATE_TOKEN > ./.argo-token.txt
+"""
+local_resource("create-argo-server-token", script, resource_deps=["argo-workflows-server"],  labels="argo")
+
+
 
 
 # Extensions are open-source, pre-packaged functions that extend Tilt
@@ -132,20 +99,3 @@ local_resource("create-argo-server-token", script, resource_deps=["argo-workflow
 #
 secret_settings(disable_scrub=True)
 load('ext://git_resource', 'git_checkout')
-# Organize logic into functions
-#   Tiltfiles are written in Starlark, a Python-inspired language, so
-#   you can use functions, conditionals, loops, and more.
-#
-#   More info: https://docs.tilt.dev/tiltfile_concepts.html
-#
-def tilt_demo():
-    # Tilt provides many useful portable built-ins
-    # https://docs.tilt.dev/api.html#modules.os.path.exists
-    if os.path.exists('tilt-avatars/Tiltfile'):
-        # It's possible to load other Tiltfiles to further organize
-        # your logic in large projects
-        # https://docs.tilt.dev/multiple_repos.html
-        load_dynamic('tilt-avatars/Tiltfile')
-    watch_file('tilt-avatars/Tiltfile')
-    git_checkout('https://github.com/tilt-dev/tilt-avatars.git',
-                 checkout_dir='tilt-avatars')

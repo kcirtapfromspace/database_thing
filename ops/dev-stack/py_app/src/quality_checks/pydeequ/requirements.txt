@@ -1,0 +1,5 @@
+pandas==1.5.3
+psycopg2_binary==2.9.5
+SQLAlchemy==2.0.1
+pydeequ
+pyspark

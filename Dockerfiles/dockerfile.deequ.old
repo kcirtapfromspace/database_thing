@@ -1,0 +1,44 @@
+# Use a minimal Python image as the build stage
+FROM python:3.11.0-slim as build
+WORKDIR /opt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    openjdk-11-jdk-headless \
+    gcc \
+    wget &&\
+    wget -q https://dlcdn.apache.org/spark/spark-3.0.3/spark-3.0.3-bin-hadoop2.7.tgz && \
+    tar xf spark-3.0.3-bin-hadoop2.7.tgz && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY  ./ops/dev-stack/py_app/src/requirements.txt .
+WORKDIR /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PYSPARK_HADOOP_VERSION=3
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV SPARK_HOME=/content/spark-3.0.3-bin-hadoop2.7
+ENV SPARK_VERSION=3.0.3
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Set the working directory
+COPY  ./ops/dev-stack/py_app/src/. .
+# Use buildkit to cache pip dependencies
+# https://pythonspeed.com/articles/docker-cache-pip-downloads/
+RUN --mount=type=cache,target=/root/.cache \ 
+        python3 -m pip install -U --no-cache-dir -r requirements.txt --prefer-binary -v 
+
+# Run unit tests
+# RUN python -m unittest discover && \
+#     rm -rf tests __pycache__
+
+# Use distroless as the final image
+# FROM gcr.io/distroless/python3-debian11:debug
+
+# # Set the working directory
+# WORKDIR /app
+
+# # Copy the application code and dependencies from the build stage
+# COPY --from=build /opt/venv/ /app
+
+# Set the default command to run the application
+CMD ["pytho3", "deequ_quality_checks/dyno_deequ.py"]

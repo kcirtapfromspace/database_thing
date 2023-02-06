@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: "gx-quality-checks{{ .Release.Name }}"
+spec:
+  entrypoint: gx-container
+  arguments:
+    parameters:
+      - name: database_user
+        value: {{ .Values.workflow.database_user }}
+      - name: database_password
+        value: {{ .Values.workflow.database_password }}
+      - name: database_host
+        value: {{ .Values.workflow.database_host }}
+      - name: database_port
+        value: {{ .Values.workflow.database_port }}
+      - name: database_name
+        value: {{ .Values.workflow.database_name }}
+  templates:
+  - name: gx-container
+    container:
+      image: gx:local
+      command: [python, "quality_checks/great_expectations/dyno_gx.py"]
+      args: []
+      env:
+      - name: database_user
+      # In this case, the first set of curly braces is interpreted by Helm, and the second set is passed as a string to the Argo workflow. 
+      # The backticks (`) are used to escape the curly braces so they are not interpreted as YAML syntax.
+        value: "{{ `{{ workflow.parameters.database_user }}` }}"
+      - name: database_password
+        value: "{{ `{{workflow.parameters.database_password}}` }}"
+      - name: database_host
+        value: "{{ `{{workflow.parameters.database_host}}` }}"
+      - name: database_port
+        value: "{{ `{{workflow.parameters.database_port}}` }}"
+      - name: database_name
+        value: "{{  `{{workflow.parameters.database_name}}` }}"
+      imagePullPolicy: IfNotPresent
+  - name: independent-run
+    inputs:
+      parameters:
+      - name: run-time
+    container:
+      image: gx:local
+      command: [python, "quality_checks/great_expectations/dyno_gx.py"]
+      args: []
+      env:
+      - name: database_user
+        value: "{{ `{{ workflow.parameters.database_user}}` }}"
+      - name: database_password
+        value: "{{ `{{workflow.parameters.database_password}}` }}"
+      - name: database_host
+        value: "{{ `{{workflow.parameters.database_host}}` }}"
+      - name: database_port
+        value: "{{ `{{workflow.parameters.database_port}}` }}"
+      - name: database_name
+        value: "{{ `{{workflow.parameters.database_name}}` }}"
+      imagePullPolicy: IfNotPresent
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion

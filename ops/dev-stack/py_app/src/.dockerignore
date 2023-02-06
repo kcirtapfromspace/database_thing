@@ -1,0 +1,11 @@
+# python-specific dependencies
+__pycache__/
+*.egg-info/
+*.pyc
+*.pyo
+venv/*
+env/*
+
+# go-specific dependencies
+bin/
+pkg/

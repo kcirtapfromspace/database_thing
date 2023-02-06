@@ -28,3 +28,39 @@ spec:
           value: "port"
         - name: POSTGRES_DBNAME
           value: "dbname"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-gx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: py-gx
+  template:
+    metadata:
+      labels:
+        app: py-gx
+    spec:
+      containers:
+      - name: py-gx
+        image: py_ex
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-deequ
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: py-deequ
+  template:
+    metadata:
+      labels:
+        app: py-deequ
+    spec:
+      containers:
+      - name: py-deequ
+        image: py_deequ

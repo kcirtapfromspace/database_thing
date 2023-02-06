@@ -1,0 +1,39 @@
+# Spark build stage
+ARG SPARK_VERSION=3.0.3
+ARG PYTHON_VERSION=3.9
+FROM apache/spark-py:v3.3.1 as spark_build
+    
+# Deequ build stage
+FROM python:${PYTHON_VERSION}-slim-bullseye as deequ_build
+ENV VIRTUAL_ENV=/opt/venv
+WORKDIR /opt/venv
+RUN apt-get update && apt-get install -y gcc python3-dev  --no-install-recommends 
+COPY  ./ops/dev-stack/py_app/src/quality_checks/pydeequ/requirements.txt .
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN    python3 -m venv --copies $VIRTUAL_ENV && \
+    $VIRTUAL_ENV/bin/python3 -m pip install -U --upgrade pip && \
+    $VIRTUAL_ENV/bin/python3 -m pip install -U  setuptools wheel 
+
+# Install Deequ
+FROM deequ_build as deequ_install
+# ENV VIRTUAL_ENV=/opt/venv
+RUN  $VIRTUAL_ENV/bin/python3 -m pip install -U -r requirements.txt --prefer-binary -v 
+
+# Final stage 
+FROM gcr.io/distroless/python3-debian11:debug
+ENV PYTHON_VERSION=3.9
+ENV SPARK_VERSION=3.0.3
+COPY ./ops/dev-stack/py_app/src /opt/venv
+COPY --from=spark_build /opt/spark /opt/spark
+COPY --from=deequ_install /opt/venv/ /opt/venv/
+COPY --from=deequ_install /usr/lib/ /usr/lib/
+
+# Set Spark environment variables
+ENV SPARK_HOME=/opt
+ENV PATH=$PATH:/opt/bin
+ENV PATH /opt/venv/bin:$PATH
+ENV PATH /opt/spark/bin:$PATH
+
+# Use the distroless base image to minimize the size of the final image
+WORKDIR /opt/venv
+CMD ["python3"]
