@@ -61,7 +61,8 @@ The Tiltfile is a configuration file used by Tilt to manage the development envi
 
 https://github.com/GoogleContainerTools/distroless
 ```
-python3 deequ_quality_checks/dyno_deequ.py
+python3 quality_checks/pydeequ/dyno_deequ.py
+python3 quality_checks/great_expectations/dyno_gx.py
 $ docker run --entrypoint=sh --rm -ti py_app:latest
 $ docker run --entrypoint=sh -ti my_debug_image
 ```

@@ -16,6 +16,7 @@ resources:
   # - py_app/py_service.yaml
   #argo
   # - argo/sa.yaml
+  # - argo/workflows/deequ_quality_checks.yaml
 
 secretGenerator:
 # go loader

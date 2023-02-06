@@ -54,3 +54,10 @@ env/
 .vscode/
 
 production.2023.01.06.sql
+.idea/.gitignore
+.idea/database_thing.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.argo-token.txt

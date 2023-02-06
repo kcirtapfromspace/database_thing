@@ -1,5 +1,11 @@
-nltk
-pandas
 matplotlib
+nltk
+numpy
+pandas
+psycopg2-binary
+py4j
+pyarrow>=4.0.0
 scikit-learn
-sqlalchemy
+SQLAlchemy
+tabulate
+great_expectations
