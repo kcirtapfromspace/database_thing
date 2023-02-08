@@ -145,12 +145,6 @@ func GetColumnData(data [][]string, colIndex int) ([]string, error) {
 	return columnData, nil
 }
 
-func updateCounter(counters map[string]DataTypeInfo, dataType string) {
-	dataTypeInfo := counters[dataType]
-	dataTypeInfo.DataTypeCounters++
-	counters[dataType] = dataTypeInfo
-}
-
 func DetermineDataType(columnData []string) (map[string]DataTypeInfo, int, error) {
 
 	if len(columnData) == 0 {
@@ -166,13 +160,20 @@ func DetermineDataType(columnData []string) (map[string]DataTypeInfo, int, error
 			continue
 		}
 
+		if determined := determineNumberType(value, counters); determined {
+			continue
+		}
+		// Check if value is a valid date
+		_, err := IsValidDate(value)
+		if err == nil {
+			updateCounter(counters, "DATE")
+			continue
+		}
+
 		if determined := determineTimeTypes(value, counters); determined {
 			continue
 		}
 
-		if determined := determineNumberType(value, counters); determined {
-			continue
-		}
 		if determined := determineTextType(value, counters); determined {
 			continue
 		}
@@ -181,114 +182,9 @@ func DetermineDataType(columnData []string) (map[string]DataTypeInfo, int, error
 
 		return nil, 0, fmt.Errorf("Could not determine data type of value %s", value)
 	}
-
+	fmt.Printf("Final Data Type Counters: %+v\n", counters)
+	fmt.Printf("Total Count: %d\n", totalCount)
 	return counters, len(columnData), nil
-}
-
-func determineTextType(value string, counters map[string]DataTypeInfo) bool {
-	if match, _ := regexp.MatchString(`^.{0,255}$`, value); match {
-		updateCounter(counters, "VARCHAR(255)")
-		return true
-	} else if match, _ := regexp.MatchString(`^.{0,65535}$`, value); match {
-		updateCounter(counters, "TEXT")
-		return true
-	}
-	return false
-}
-
-func determineTimeTypes(value string, counters map[string]DataTypeInfo) bool {
-	var timeFormats = []string{
-		"15:04:05",
-		"2006-01-02 15:04:05",
-		"2006-01-02T15:04:05",
-		"2006-01-02 15:04:05.999999",
-		time.RFC3339,
-		time.RFC3339Nano,
-		"15:04",
-		"15:04:05.999999",
-	}
-	for _, format := range timeFormats {
-		if _, err := time.Parse(format, value); err == nil {
-			switch {
-			case format == "15:04:05":
-				dataTypeInfo := counters["TIME"]
-				dataTypeInfo.DataTypeCounters++
-				counters["TIME"] = dataTypeInfo
-				return true
-			case strings.HasSuffix(format, ":04:05"):
-				dataTypeInfo := counters["TIME"]
-				dataTypeInfo.DataTypeCounters++
-				counters["TIME"] = dataTypeInfo
-				return true
-			case format == "2006-01-02 15:04:05.999999-07":
-				dataTypeInfo := counters["TIMESTAMPZ"]
-				dataTypeInfo.DataTypeCounters++
-				counters["TIMESTAMPZ"] = dataTypeInfo
-				return true
-			default:
-				dataTypeInfo := counters["TIME"]
-				dataTypeInfo.DataTypeCounters++
-				counters["TIME"] = dataTypeInfo
-				return true
-			}
-		}
-	}
-	return false
-}
-func determineDecimalType(value string, counters map[string]DataTypeInfo) {
-
-}
-
-func determineCharType(value string, counters map[string]DataTypeInfo) {
-	if match, _ := regexp.MatchString(`^.{1,1}$`, value); match {
-		updateCounter(counters, "CHAR")
-		return
-	}
-}
-
-func determineByteaType(value string, counters map[string]DataTypeInfo) {
-	if match, _ := regexp.MatchString(`^[\x00-\xff]*$`, value); match {
-		updateCounter(counters, "BYTEA")
-		return
-	}
-}
-
-func determineNumberType(value string, counters map[string]DataTypeInfo) bool {
-	if parsedInt, intErr := strconv.ParseInt(value, 10, 64); intErr == nil {
-		if parsedInt >= math.MinInt32 && parsedInt <= math.MaxInt32 {
-			updateCounter(counters, "INT")
-			return true
-		} else if parsedInt >= -32768 && parsedInt <= 32767 {
-			updateCounter(counters, "SMALLINT")
-			return true
-		} else {
-			updateCounter(counters, "BIGINT")
-			return true
-		}
-	}
-
-	var parsedFloat float64
-	var floatErr error
-
-	if parsedFloat, floatErr = strconv.ParseFloat(value, 32); floatErr == nil {
-		updateCounter(counters, "DECIMAL")
-		return true
-	} else if parsedFloat, floatErr = strconv.ParseFloat(value, 64); floatErr == nil {
-		if math.MaxInt64-parsedFloat < 1e-10 {
-			updateCounter(counters, "NUMERIC")
-			return true
-		} else {
-			updateCounter(counters, "FLOAT")
-			return true
-		}
-	}
-
-	if value == "true" || value == "false" {
-		updateCounter(counters, "BOOL")
-		return true
-	}
-
-	return false
 }
 
 func CalculateTypePercentages(dataTypeCounts map[string]DataTypeInfo, totalCount int) (map[string]float64, error) {
@@ -306,6 +202,7 @@ func CalculateTypePercentages(dataTypeCounts map[string]DataTypeInfo, totalCount
 				typePercentages[dataTypeInfo.DataType] = float64(counts.DataTypeCounters) / float64(totalCount) * 100
 			} else {
 				allDataTypesFound = false
+				fmt.Printf("Data type '%s' not found in dataTypeCounts map\n", dataTypeInfo.DataType)
 			}
 		}
 	}
@@ -361,137 +258,11 @@ func DetermineTableSchema(columnData []string, typePercentages map[string]float6
 		fmt.Println("No matching data types found, returning default VARCHAR(255)")
 		return []DataTypeInfo{{DataType: "VARCHAR(255)", Size: 255}}, nil
 	}
-
+	fmt.Printf("Matching data types found: %v\n", matchingDataTypes)
 	return matchingDataTypes, nil
 }
 
-func CheckForNullValues(columnData []string) (int, error) {
-	nullCount := 0
-	for i, value := range columnData {
-		if len(value) == 0 {
-			nullCount++
-		} else if strings.ToLower(value) == "null" {
-			return 0, fmt.Errorf("error in row %d: string value 'null' cannot be used in place of a null value", i+1)
-		}
-	}
-	return nullCount, nil
-}
-
-func ParseTime(value string) (time.Time, error) {
-	var parsedTime time.Time
-	var err error
-	formatStrings := []string{"2006-01-02 15:04:05", "2006-01-02", "2006/01/02 15:04:05", "2006/01/02", "01/02/2006", "2006-01-02T01:04:05Z", "2006-01-02T01:04:05-07", "2006-01-02T01:04:05.999999Z"}
-	for _, format := range formatStrings {
-		parsedTime, err = time.Parse(format, value)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return time.Time{}, fmt.Errorf("%s is not a valid date format", value)
-	}
-	return parsedTime, nil
-}
-
-func CheckInvalidDateValues(parsedTime time.Time) error {
-	if parsedTime.IsZero() {
-		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
-	}
-
-	if parsedTime.Month() == 0 || parsedTime.Day() == 0 {
-		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
-	}
-
-	if parsedTime.Month() < 1 || parsedTime.Month() > 12 {
-		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
-	}
-
-	daysInMonth := 31
-	if parsedTime.Month() == 2 {
-		if parsedTime.Year()%4 == 0 && (parsedTime.Year()%100 != 0 || parsedTime.Year()%400 == 0) {
-			daysInMonth = 29
-		} else {
-			daysInMonth = 28
-		}
-	} else if parsedTime.Month() == 4 || parsedTime.Month() == 6 || parsedTime.Month() == 9 || parsedTime.Month() == 11 {
-		daysInMonth = 30
-	}
-
-	if parsedTime.Day() < 1 || parsedTime.Day() > daysInMonth {
-		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
-	}
-	return nil // no errors
-}
-
-func IsValidDate(value string) (time.Time, error) {
-	// parse the time using helper function
-	parsedTime, err := ParseTime(value)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("%s is not a valid date: %v", value, err)
-	}
-
-	// check invalid date values using helper function
-	if err := CheckInvalidDateValues(parsedTime); err != nil {
-		return parsedTime, fmt.Errorf("%s is not a valid date: %v", value, err)
-	}
-
-	// try to convert the value to the Postgres date format using the helper function
-	parsedTime, err = ConvertToPostgresDate(parsedTime)
-	if err != nil {
-		return parsedTime, fmt.Errorf("%s unable to convert time format to: %v", value, err)
-	}
-
-	return parsedTime, nil
-}
-
-func ConvertToPostgresDate(parsedTime time.Time) (time.Time, error) {
-	formats := []string{
-		"2006-01-02 15:04:05.999999-07:00",
-		"2006-01-02 15:04:05.999999-07",
-		"2006-01-02 15:04:05.999999",
-		"2006-01-02 15:04:05.999999+07:00:00",
-		"2006-01-02 15:04:05.999999+07:00",
-		"2006-01-02 15:04:05.999999+07",
-		"2006-01-02 15:04:05",
-		"2006-01-02",
-	}
-
-	for i, format := range formats {
-		formattedString := parsedTime.Format(format)
-		parsedTime, err := time.Parse(format, formattedString)
-		if err == nil {
-			return parsedTime, nil
-		} else {
-			fmt.Printf("Error in format %d: %v\n", i, err)
-		}
-	}
-	return time.Time{}, fmt.Errorf("could not convert %v to a Postgres compatible date format", parsedTime)
-}
-
-func IsValidBoolean(value string) bool {
-	if value == "true" || value == "false" {
-		return true
-	}
-	return false
-}
-
-func IsValidUUID(value string) (bool, error) {
-	if _, err := uuid.Parse(value); err != nil {
-		return false, fmt.Errorf("%s is not a valid UUID: %v", value, err)
-	}
-	return true, nil
-}
-
-func IsValidEnum(value string, possibleEnumValues []string) bool {
-	// Check if the value is in the list of possible enum values
-	for _, enumValue := range possibleEnumValues {
-		if value == enumValue {
-			return true
-		}
-	}
-	return false
-}
-
+// InferColumnTypes infers the column types of the data
 func InferColumnTypes(data [][]string, columnNames []string) map[string]string {
 	if data == nil || len(data) < 2 || columnNames == nil || len(columnNames) == 0 {
 		return nil
@@ -550,6 +321,12 @@ func InferColumnTypes(data [][]string, columnNames []string) map[string]string {
 	return columnTypes
 }
 
+// ----------------------------------------------
+// POSTGRES DATABASE  FUNCTIONS
+// ----------------------------------------------
+
+// DetermineTableSchema determines the table schema based on the data type percentages
+// and the data type mapping
 func CreateTable(db *sql.DB, tableName string, columnNames []string, columnTypes map[string]string) error {
 	if db == nil {
 		return fmt.Errorf("error: Invalid database connection")
@@ -679,3 +456,223 @@ func PopulateTable(db *sql.DB, tableName string, dataset [][]interface{}, column
 // 	}
 // 	return data, nil
 // }
+
+// ----------------------------------------------
+// UTILITIES FUNCTIONS
+// ----------------------------------------------
+func IsValidDate(value string) (time.Time, error) {
+	// parse the time using helper function
+	parsedTime, err := ParseTime(value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("%s is not a valid date: %v", value, err)
+	}
+
+	// check invalid date values using helper function
+	if err := CheckInvalidDateValues(parsedTime); err != nil {
+		return parsedTime, fmt.Errorf("%s is not a valid date: %v", value, err)
+	}
+
+	// try to convert the value to the Postgres date format using the helper function
+	parsedTime, err = ConvertToPostgresDate(parsedTime)
+	if err != nil {
+		return parsedTime, fmt.Errorf("%s unable to convert time format to: %v", value, err)
+	}
+
+	return parsedTime, nil
+}
+
+func ConvertToPostgresDate(parsedTime time.Time) (time.Time, error) {
+	formats := []string{
+		"2006-01-02 15:04:05.999999-07:00",
+		"2006-01-02 15:04:05.999999-07",
+		"2006-01-02 15:04:05.999999",
+		"2006-01-02 15:04:05.999999+07:00:00",
+		"2006-01-02 15:04:05.999999+07:00",
+		"2006-01-02 15:04:05.999999+07",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	}
+
+	for i, format := range formats {
+		formattedString := parsedTime.Format(format)
+		parsedTime, err := time.Parse(format, formattedString)
+		if err == nil {
+			return parsedTime, nil
+		} else {
+			fmt.Printf("Error in format %d: %v\n", i, err)
+		}
+	}
+	return time.Time{}, fmt.Errorf("could not convert %v to a Postgres compatible date format", parsedTime)
+}
+
+func IsValidBoolean(value string) bool {
+	if value == "true" || value == "false" {
+		return true
+	}
+	return false
+}
+
+func IsValidUUID(value string) (bool, error) {
+	if _, err := uuid.Parse(value); err != nil {
+		return false, fmt.Errorf("%s is not a valid UUID: %v", value, err)
+	}
+	return true, nil
+}
+
+func IsValidEnum(value string, possibleEnumValues []string) bool {
+	// Check if the value is in the list of possible enum values
+	for _, enumValue := range possibleEnumValues {
+		if value == enumValue {
+			return true
+		}
+	}
+	return false
+}
+
+func CheckForNullValues(columnData []string) (int, error) {
+	nullCount := 0
+	for i, value := range columnData {
+		if len(value) == 0 {
+			nullCount++
+		} else if strings.ToLower(value) == "null" {
+			return 0, fmt.Errorf("error in row %d: string value 'null' cannot be used in place of a null value", i+1)
+		}
+	}
+	return nullCount, nil
+}
+
+func determineTextType(value string, counters map[string]DataTypeInfo) bool {
+	if match, _ := regexp.MatchString(`^.{0,255}$`, value); match {
+		updateCounter(counters, "VARCHAR(255)")
+		return true
+	} else if match, _ := regexp.MatchString(`^.{0,65535}$`, value); match {
+		updateCounter(counters, "TEXT")
+		return true
+	}
+	return false
+}
+
+func determineTimeTypes(value string, counters map[string]DataTypeInfo) bool {
+	var timeFormats = []string{
+		"15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05.999999",
+		time.RFC3339,
+		time.RFC3339Nano,
+		"15:04",
+		"15:04:05.999999",
+	}
+	for _, format := range timeFormats {
+		if _, err := time.Parse(format, value); err == nil {
+			switch {
+			case format == "15:04:05":
+				updateCounter(counters, "TIME")
+				return true
+			case strings.HasSuffix(format, ":04:05"):
+				updateCounter(counters, "TIME")
+				return true
+			case format == "2006-01-02 15:04:05.999999-07":
+				updateCounter(counters, "TIMESTAMPZ")
+				return true
+			default:
+				updateCounter(counters, "TIME")
+				return true
+			}
+		}
+	}
+	return false
+}
+func determineDecimalType(value string, counters map[string]DataTypeInfo) {
+
+}
+
+func determineNumberType(value string, counters map[string]DataTypeInfo) bool {
+	if parsedInt, intErr := strconv.ParseInt(value, 10, 64); intErr == nil {
+		if parsedInt >= math.MinInt32 && parsedInt <= math.MaxInt32 {
+			updateCounter(counters, "INT")
+			return true
+		} else if parsedInt >= -32768 && parsedInt <= 32767 {
+			updateCounter(counters, "SMALLINT")
+			return true
+		} else {
+			updateCounter(counters, "BIGINT")
+			return true
+		}
+	}
+
+	var parsedFloat float64
+	var floatErr error
+
+	if parsedFloat, floatErr = strconv.ParseFloat(value, 32); floatErr == nil {
+		updateCounter(counters, "DECIMAL")
+		return true
+	} else if parsedFloat, floatErr = strconv.ParseFloat(value, 64); floatErr == nil {
+		if math.MaxInt64-parsedFloat < 1e-10 {
+			updateCounter(counters, "NUMERIC")
+			return true
+		} else {
+			updateCounter(counters, "FLOAT")
+			return true
+		}
+	}
+
+	if value == "true" || value == "false" {
+		updateCounter(counters, "BOOL")
+		return true
+	}
+
+	return false
+}
+
+func CheckInvalidDateValues(parsedTime time.Time) error {
+	if parsedTime.IsZero() {
+		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
+	}
+
+	if parsedTime.Month() == 0 || parsedTime.Day() == 0 {
+		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
+	}
+
+	if parsedTime.Month() < 1 || parsedTime.Month() > 12 {
+		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
+	}
+
+	daysInMonth := 31
+	if parsedTime.Month() == 2 {
+		if parsedTime.Year()%4 == 0 && (parsedTime.Year()%100 != 0 || parsedTime.Year()%400 == 0) {
+			daysInMonth = 29
+		} else {
+			daysInMonth = 28
+		}
+	} else if parsedTime.Month() == 4 || parsedTime.Month() == 6 || parsedTime.Month() == 9 || parsedTime.Month() == 11 {
+		daysInMonth = 30
+	}
+
+	if parsedTime.Day() < 1 || parsedTime.Day() > daysInMonth {
+		return fmt.Errorf("%s is not a valid date format", parsedTime.String())
+	}
+	return nil // no errors
+}
+
+func ParseTime(value string) (time.Time, error) {
+	var parsedTime time.Time
+	var err error
+	formatStrings := []string{"2006-01-02 15:04:05", "2006-01-02", "2006/01/02 15:04:05", "2006/01/02", "01/02/2006", "2006-01-02T01:04:05Z", "2006-01-02T01:04:05-07", "2006-01-02T01:04:05.999999Z"}
+	for _, format := range formatStrings {
+		parsedTime, err = time.Parse(format, value)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		return time.Time{}, fmt.Errorf("%s is not a valid date format", value)
+	}
+	return parsedTime, nil
+}
+
+func updateCounter(counters map[string]DataTypeInfo, dataType string) {
+	dataTypeInfo := counters[dataType]
+	dataTypeInfo.DataTypeCounters++
+	counters[dataType] = dataTypeInfo
+}
