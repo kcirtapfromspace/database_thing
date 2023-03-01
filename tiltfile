@@ -62,7 +62,10 @@ helm_remote('redpanda', namespace='redpanda', repo_url='https://charts.redpanda.
 # k8s_resource("argo-workflows-workflow-controller", port_forwards=['2746'])
 # k8s_resource("argo-workflows-server", port_forwards=['2746'],  labels="argo")
 # k8s_resource("argo-workflows-workflow-controller", labels="argo")
-# k8s_resource("create-go-loader-user", labels="psql_db")
+k8s_resource("redpanda-configuration", labels="redpanda",resource_deps=["redpanda"])
+k8s_resource("redpanda-console",port_forwards=['8080'], labels="redpanda",resource_deps=["redpanda"])
+k8s_resource("redpanda-post-upgrade", labels="redpanda",resource_deps=["redpanda"],)
+k8s_resource("redpanda", labels="redpanda")
 
 # Install Argo Workflows
 load('ext://namespace', 'namespace_create')

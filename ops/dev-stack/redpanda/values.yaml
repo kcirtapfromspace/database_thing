@@ -1,7 +1,5 @@
 commonLabels:
   service: redpanda
-tls:
-  enabled: false 
 console:
   enabled: true
   configmap:
@@ -24,10 +22,14 @@ console:
           clusters:
             - name: local-connect-cluster
               url: http://connect:8083
+tls:
+  enabled: false 
 storage:
   persistentVolume:
     enabled: true
     size: 5Gi
+statefulset:
+  replicas: 1
 cluster:
   config:
     redpanda:
