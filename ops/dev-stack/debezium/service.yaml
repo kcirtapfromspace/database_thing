@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbz-connect
+  namespace: default
+  labels:
+    app.kubernetes.io/name: dbz-connect
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8083
+      targetPort: postgres-psql
+      protocol: TCP
+      name: psql
+  selector:
+    app.kubernetes.io/name: dbz-connect

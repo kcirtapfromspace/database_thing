@@ -1,6 +1,7 @@
-FROM postgres:12.4
+FROM postgres:13
 # note initialization files will be executed in sorted name order as defined by the current locale, which defaults to en_US.utf8. 
-# COPY ./ops/dev-stack/tta_postgres/config/database/ .
+COPY ./ops/dev-stack/postgres_db/config/init.sql /docker-entrypoint-initdb.d/init.sql
+COPY ./ops/dev-stack/postgres_db/config/postgresql.conf /etc/postgresql/postgresql.conf
 # RUN psql -h localhost -U postgres -d postgres -f /production.2023.01.06.sql
 
 
