@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-loader-sql
+data:
+  go-loader.sql: |
+    #go loader user
+    # CREATE USER go_loader WITH PASSWORD '${GO_LOADER_PG_PASSWORD}';
+    CREATE USER go_loader WITH PASSWORD 'go_loader';
+    GRANT CONNECT ON DATABASE postgres TO go_loader;
+    GRANT USAGE ON SCHEMA public TO go_loader;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO go_loader;
+
+    CREATE USER deequ_quality_checks WITH PASSWORD 'deequ_quality_checks';
+    GRANT CONNECT ON DATABASE postgres TO deequ_quality_checks;
+    GRANT USAGE ON SCHEMA public TO deequ_quality_checks;
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO deequ_quality_checks;
+    GRANT INSERT ON ALL TABLES IN SCHEMA public TO deequ_quality_checks;
+

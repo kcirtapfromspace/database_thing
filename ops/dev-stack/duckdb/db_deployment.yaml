@@ -16,14 +16,7 @@ spec:
         app.kubernetes.io/name: postgres-db
     spec:
       containers:
-        - args: 
-          - "postgres"
-          - "-c" 
-          - "max_connections=1000"
-          - "-c"
-          - "wal_level=logical"
-          - "-c"
-          - "log_min_error_statement=fatal"
+        - args: ["postgres", "-c" ,"max_connections=1000"]
           env:
           - name: POSTGRES_USER
             valueFrom:
