@@ -3,21 +3,33 @@ kind: Kustomization
 
 
 resources:
-  #go loader
+  # go loader
   - go_loader/go_deployment.yaml
   - go_loader/go_service.yaml
-  #postgres db
+  # postgres db
   - postgres_db/db_deployment.yaml
   - postgres_db/db_service.yaml
   - postgres_db/job/go_loader_sql_configmap.yaml  
   - postgres_db/job/create_go_loader_user_job.yaml 
-  #py app
+  # datagen
+  - datagen/job/postgres_datagen_job.yaml 
+  # py app
   - py_app/py_deployment.yaml
+  # dbz connect
+  - debezium/deployment.yaml
+  - debezium/service.yaml
+  - debezium/job/configure_kafka_connectors.yaml
   # - py_app/py_service.yaml
   #argo
   # - argo/sa.yaml
   # - argo/workflows/deequ_quality_checks.yaml
 
+configMapGenerator:
+  - name: kafka-config
+    files:
+      - debezium/config/s3-sink.json
+      - debezium/config/pg-src.json
+      
 secretGenerator:
 # go loader
   - name: go-loader-secret

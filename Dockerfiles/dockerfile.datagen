@@ -1,0 +1,11 @@
+FROM python:3.9-slim-buster
+
+WORKDIR /app
+
+COPY ./ops/dev-stack/datagen/src/ ./
+RUN python3 -m  pip install -U --upgrade pip && \
+    python3 -m pip install -U -r requirements.txt --prefer-binary  --no-cache-dir -v
+
+ENV RUNTIME_ENVIRONMENT="DOCKER"
+
+CMD ["python", "user_payments_generator.py"]

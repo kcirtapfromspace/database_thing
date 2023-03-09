@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbz-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dbz-connect
+  template:
+    metadata:
+      labels:
+        app: dbz-connect
+    spec:
+      containers:
+      - name: dbz-connect
+        image: dbz_connect:latest
+        ports:
+          - name: dbz-connect
+            containerPort: 8083
+        volumeMounts:
+        - name: config
+          mountPath: "/connectors"
+        env:
+          - name: BOOTSTRAP_SERVERS
+            value: "redpanda.redpanda.svc.cluster.local:9093"
+          - name: GROUP_ID
+            value: "1"
+          - name: CONFIG_STORAGE_TOPIC
+            value: "users.configs"
+          - name: OFFSET_STORAGE_TOPIC
+            value: "users.offset"
+          - name: STATUS_STORAGE_TOPIC
+            value: "users.status"
+          - name: KEY_CONVERTER
+            value: " io.confluent.connect.avro.AvroConverter"
+          - name: VALUE_CONVERTER
+            value: " io.confluent.connect.avro.AvroConverter"
+          - name: CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL
+            value: "http://redpanda.redpanda.svc.cluster.local:8081"
+          - name: CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL
+            value: "http://redpanda.redpanda.svc.cluster.local:8081"
+      # TODO: This is a hack to get the connectors to load. Need to figure out how to do this properly. 
+      # https://debezium.io/documentation/reference/stable/tutorial.html#starting-kafka-connect
+      # could also look at using lifecycle hooks with postStart
+      # - name: sidecar
+      #   image: curlimages/curl
+      #   command: ["/bin/sh", "-c"]
+      #   args:
+      #     - |
+      #       until curl -s -H "Accept:application/json" localhost:8083/; do sleep 1; done
+      #       curl -X PUT -H "Content-Type:application/json" localhost:8083/connectors/pg-src/config -d '@/connectors/pg-src.json'
+      #       curl -X PUT -H "Content-Type:application/json" localhost:8083/connectors/s3-sink/config -d '@/connectors/s3-sink.json'
+      #   volumeMounts:
+      #   - name: config
+      #     mountPath: "/connectors"
+      volumes:
+      - name: config
+        configMap:
+          name: kafka-config
+

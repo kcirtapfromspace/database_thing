@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-go-loader-user
+spec:
+  template:
+    spec:
+      # initContainers:
+      # - name: wait-for-postgres
+      #   image: alpine:latest
+      #   command: ["ash", "-c", "apk add --no-cache curl && until curl -sL -o /dev/null -w '%{http_code}' http://postgres-db:5432; do echo 'waiting for postgres-db service...'; sleep 2; done"]
+      initContainers:
+      - name: check-db-ready
+        image: postgres:12-alpine
+        command: ['sh', '-c', 
+          'until pg_isready -h postgres-db -p 5432; 
+          do echo waiting for database; sleep 2; done;']
+      containers:
+      - name: create-go-loader-user
+        image: postgres:12-alpine
+        command: ["psql"]
+        args: ["-U", "postgres", "-h", "postgres-db", "-f", "/etc/go-loader/go-loader.sql"]
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: GO_LOADER_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: go-loader-secret
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: go-loader-sql
+          mountPath: /etc/go-loader
+      restartPolicy: Never
+      volumes:
+      - name: go-loader-sql
+        configMap:
+          name: go-loader-sql
+  events:
+  - type: Normal
+    reason: postgres-db-started
+    message: The postgres-db service has started
