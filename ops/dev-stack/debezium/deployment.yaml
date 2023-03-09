@@ -16,7 +16,8 @@ spec:
       - name: dbz-connect
         image: dbz_connect:latest
         ports:
-          - containerPort: 8083
+          - name: dbz-connect
+            containerPort: 8083
         volumeMounts:
         - name: config
           mountPath: "/connectors"
@@ -39,19 +40,20 @@ spec:
             value: "http://redpanda.redpanda.svc.cluster.local:8081"
           - name: CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL
             value: "http://redpanda.redpanda.svc.cluster.local:8081"
-                  # TODO: This is a hack to get the connectors to load. Need to figure out how to do this properly. 
+      # TODO: This is a hack to get the connectors to load. Need to figure out how to do this properly. 
       # https://debezium.io/documentation/reference/stable/tutorial.html#starting-kafka-connect
-      - name: sidecar
-        image: curlimages/curl
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            until curl -s -H "Accept:application/json" localhost:8083/; do sleep 1; done
-            curl -X PUT -H "Content-Type:application/json" localhost:8083/connectors/pg-src/config -d '@/connectors/pg-src.json'
-            curl -X PUT -H "Content-Type:application/json" localhost:8083/connectors/s3-sink/config -d '@/connectors/s3-sink.json'
-        volumeMounts:
-        - name: config
-          mountPath: "/connectors"
+      # could also look at using lifecycle hooks with postStart
+      # - name: sidecar
+      #   image: curlimages/curl
+      #   command: ["/bin/sh", "-c"]
+      #   args:
+      #     - |
+      #       until curl -s -H "Accept:application/json" localhost:8083/; do sleep 1; done
+      #       curl -X PUT -H "Content-Type:application/json" localhost:8083/connectors/pg-src/config -d '@/connectors/pg-src.json'
+      #       curl -X PUT -H "Content-Type:application/json" localhost:8083/connectors/s3-sink/config -d '@/connectors/s3-sink.json'
+      #   volumeMounts:
+      #   - name: config
+      #     mountPath: "/connectors"
       volumes:
       - name: config
         configMap:

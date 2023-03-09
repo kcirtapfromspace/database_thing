@@ -18,6 +18,7 @@ resources:
   # dbz connect
   - debezium/deployment.yaml
   - debezium/service.yaml
+  - debezium/job/configure_kafka_connectors.yaml
   # - py_app/py_service.yaml
   #argo
   # - argo/sa.yaml

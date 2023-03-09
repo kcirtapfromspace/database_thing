@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: configure-kafka-connectors
+spec:
+  template:
+    spec:
+      containers:
+      - name: sidecar
+        image: curlimages/curl
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            until curl -s -H "Accept:application/json" dbz-connect:8083/; do sleep 1; done
+            curl -X PUT -H "Content-Type:application/json" dbz-connect:8083/connectors/pg-src/config -d '@/connectors/pg-src.json'
+            curl -X PUT -H "Content-Type:application/json" dbz-connect:8083/connectors/s3-sink/config -d '@/connectors/s3-sink.json'
+        volumeMounts:
+        - name: config
+          mountPath: "/connectors"
+      restartPolicy: Never
+      volumes:
+      - name: config
+        configMap:
+          name: kafka-config
