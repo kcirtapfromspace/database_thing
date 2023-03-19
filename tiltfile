@@ -74,6 +74,14 @@ k8s_resource("argo-workflows-server", port_forwards=['2746'],  labels="argo")
 k8s_resource("argo-workflows-workflow-controller", labels="argo")
 k8s_resource("create-go-loader-user", labels="psql_db")
 
+# Install Argo Events
+load('ext://helm_remote', 'helm_remote')
+values = [
+    "./ops/dev-stack/argo-events/values.yaml",
+                # "server=[serviceAccount.create=false,serviceAccount.name=argo-workflows,service.type=NodePort,extraArgs=[--secure=false]]", "--debug=true"
+            ]
+helm_remote('argo-events', namespace='argo', repo_url='https://argoproj.github.io/argo-helm', values=values)
+
 # Install Argo Cluster Workflows
 k8s_yaml(helm('./ops/dev-stack/argo/helm/workflows'))
 k8s_resource('py-gx',  labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
