@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: slack-notify-http
+  namespace: argo
+  annotations:
+    workflows.argoproj.io/description: >-
+      A template for sending slack notifications with workflow status details when the workflow begins and completes.
+    workflows.argoproj.io/maintainer: '@courtneygreif'
+    workflows.argoproj.io/tags: slack-workflow-notifications
+    workflows.argoproj.io/version: '>= 2.9.0'
+spec:
+  templates:
+    - name: send-completion
+      inputs:
+        parameters:
+          - name: WORKFLOW_NAME
+          - name: WORKFLOW_STATUS
+          - name: SLACK_WEBHOOK_URL
+      http:
+        url: "{{`{{inputs.parameters.SLACK_WEBHOOK_URL}}`}}"
+        method: POST
+        headers:
+          - name: Content-Type
+            value: application/json
+        body: >
+          {
+            "text": "Workflow {{`{{inputs.parameters.WORKFLOW_STATUS}}`}}: *Workflow Name:* {{`{{inputs.parameters.WORKFLOW_NAME}}`}} *Workflow Outcome:* {{`{{inputs.parameters.WORKFLOW_STATUS}}`}}{{`{{if eq .inputs.parameters.WORKFLOW_STATUS \"Succeeded\"}}`}}:celebrate:{{`{{else}}`}}:failed:{{`{{end}}`}}"
+          }
+
+    - name: send-beginning
+      inputs:
+        parameters:
+          - name: WORKFLOW_NAME
+          - name: SLACK_WEBHOOK_URL
+      http:
+        url: "{{`{{inputs.parameters.SLACK_WEBHOOK_URL}}`}}"
+        method: POST
+        headers:
+          - name: Content-Type
+            value: application/json
+        body: >
+          {
+            "text": "Workflow {{`{{inputs.parameters.WORKFLOW_NAME}}`}} beginning:star:"
+          }

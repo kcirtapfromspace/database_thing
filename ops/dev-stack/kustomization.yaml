@@ -3,6 +3,7 @@ kind: Kustomization
 
 
 resources:
+  - no_op_job.yaml
   # go loader
   - go_loader/go_deployment.yaml
   - go_loader/go_service.yaml
@@ -14,7 +15,7 @@ resources:
   # datagen
   - datagen/job/postgres_datagen_job.yaml 
   # py app
-  - py_app/py_deployment.yaml
+  # - py_app/py_deployment.yaml
   # dbz connect
   - debezium/deployment.yaml
   - debezium/service.yaml
@@ -22,6 +23,7 @@ resources:
   # - py_app/py_service.yaml
   #argo
   # - argo/sa.yaml
+  # - argo/secrets.yaml
   # - argo/workflows/deequ_quality_checks.yaml
 
 configMapGenerator:
@@ -40,3 +42,13 @@ secretGenerator:
   - name: postgres-secret
     envs:
       - postgres_db/config/postgres.env
+
+# argo
+  # - name: argo-secrets
+  #   namespace: argo
+  #   envs:
+  #     - argo/config/argo.env
+  # - name: argo-secrets
+  #   # namespace: argo
+  #   envs:
+  #     - argo/config/argo.env

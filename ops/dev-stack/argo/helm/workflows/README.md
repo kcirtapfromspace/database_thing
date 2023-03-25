@@ -1,0 +1,1 @@
+inspiration from https://github.com/pipekit/argo-workflows-ci-example

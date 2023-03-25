@@ -56,4 +56,15 @@ env/
 production.2023.01.06.sql
 .idea/*
 .argo-token.txt
-.argo-token.txt
+.github-access-token.txt
+target/
+dbt_packages/
+dbt_modules/
+logs/
+**/.DS_Store
+.user.yml
+venv/
+env/
+**/*.duckdb
+**/*.duckdb.wal
+local.env

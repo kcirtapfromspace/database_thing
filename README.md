@@ -18,7 +18,19 @@ Docker for Desktop: Includes a standalone Kubernetes server and client, as well 
 Kind: A tool for running local Kubernetes clusters using Docker containers as the nodes.
 Microk8s: A fast, lightweight, and easy-to-install distribution of Kubernetes that runs natively on Ubuntu.
 Kubeadm: A toolkit that helps users bootstrap a best-practice Kubernetes cluster in an easy and repeatable way.
+# Setup Personal Access Token
+To use the GitHub API, you will need to create a personal access token. You can do this by following the steps below:
+- Go to your GitHub account settings
+- Click on Developer settings
+- Click on Personal access tokens
+- Click on Generate new token
+- Give your token a name
+- Select the scopes you want to give your token
+- Click on Generate token
+- Copy the token and save it somewhere safe like a password manager
 
+brew install --cask 1password/tap/1password-cli
+export GITHUB_ACCESS_TOKEN=op://development/github/personal_access_token_dataworkflow
 ## Database
 This app uses PostgreSQL for data storage. You can either use an existing database, or create a new one using [Docker](https://hub.docker.com/_/postgres).
 

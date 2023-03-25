@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  namespace: argo
+  name: dbt-process-template
+  annotations:
+    workflows.argoproj.io/description: >-
+      This workflow template will pull a repository from GitHub and run dbt commands on it.
+    workflows.argoproj.io/maintainer: '@kcirtapfromspace'
+    workflows.argoproj.io/maintainer_url: 'https://github.com/kcirtapfromspace/datatabase_thing'
+    workflows.argoproj.io/version: '>= 3.3.6'
+spec:
+  templates:
+  - name: dbt-process
+    inputs:
+      artifacts:
+      - name: repo-data
+        path: /usr/app
+        s3:
+          key: "{{`{{inputs.parameters.repo}}`}}/{{`{{inputs.parameters.repo-branch}}`}}/{{ `{{workflow.uid}}` }}"
+      parameters:
+      - name: repo
+      - name: repo-branch
+      - name: dbt-task
+        default: "run"
+
+    container:
+      image: ctlptl-registry:5000/dbt_argo  # Replace with desired dbt Docker container image
+      command: ["dbt"]
+      args: ["{{ `{{inputs.parameters.dbt-task}}` }}", "--project-dir", "/usr/app/ops/dev-stack/dbt"]
+    resources:
+      requests:
+        memory: 250Mi
+        cpu: 4m
+    activeDeadlineSeconds: 300
