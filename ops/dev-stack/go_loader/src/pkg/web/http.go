@@ -37,19 +37,9 @@ type Server struct {
 
 // func ListenAndServe(address string) {
 func ListenAndServe(address string) *Server {
-	// srv := &http.Server{Addr: address}
-	// go func() {
-	// 	if err := srv.ListenAndServe(); err != nil {
-	// 		log.Println(err)
-	// 	}
-	// }()
+
 	r := gin.New()
-	// r.Use(gin.Recovery())
-	// if gin.IsDebugging() {
-	// 	r.HTMLRender = r.NewDebug("resources")
-	// } else {
-	// 	r.HTMLRender = r.NewProduction("resources")
-	// }
+
 	r.Static("/static", "/static")
 	r.LoadHTMLGlob("./static/templates/*")
 	r.GET("/debug/vars", expvarHandler)
@@ -91,16 +81,3 @@ func ListenAndServe(address string) *Server {
 
 	return &Server{}
 }
-
-// Check connection status
-// r.GET("/status", func(c *gin.Context) {
-// 	if err := db.Ping(); err != nil {
-// 		log.Fatalf("Error: %v", err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"status": "disconnected"})
-// 		return
-// 	} else {
-// 		c.JSON(http.StatusOK, gin.H{"status": "connected"})
-// 		return
-// 	}
-// })
-// Start server

@@ -1,6 +1,48 @@
 controller:
   server:
+    secure: false
     # serviceAccount:
     #   create: true
     #   name: argo-server
     extraArgs: ["--auth-mode=server"]
+  workflowDefaults:
+    metadata:
+      namespace: argo
+    #   generateName: gc-ttl-
+    #   annotations:
+    #     argo: workflows
+    spec:
+      serviceAccountName: argo-workflow
+      imagePullSecrets:
+      - name: docker-registry-secret
+    #   ttlStrategy:
+    #     secondsAfterSuccess: 5     # Time to live after workflow is successful
+    #   parallelism: 3
+  # workflowNamespaces:
+  #   - argo
+workflow:
+  serviceAccount:
+    create: true # Specifies whether a service account should be created
+    annotations: {}
+    name: "argo-workflow" # Service account which is used to run workflows
+useDefaultArtifactRepo: true
+useStaticCredentials: true
+singleNamespace: true
+
+artifactRepository:
+  # archiveLogs will archive the main container logs as an artifact
+  archiveLogs: true
+  s3:
+    # Note the `key` attribute is not the actual secret, it's the PATH to
+    # the contents in the associated secret, as defined by the `name` attribute.
+    accessKeySecret:
+      name: argo-secrets
+      key: S3_ARTIFACT_ACCESS_KEY
+    secretKeySecret:
+      name: argo-secrets
+      key: S3_ARTIFACT_SECRET_KEY
+    bucket: argo-artifacts # Populated at deploy time 
+    endpoint: minio.minio.svc.cluster.local:9000
+    insecure: true
+    region: ""
+    # keyFormat: "{{ `{{workflow.name}}` }}/{{`{{pod.name}}`}}"
