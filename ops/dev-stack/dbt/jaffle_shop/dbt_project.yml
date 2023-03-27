@@ -1,7 +1,7 @@
 name: 'jaffle_shop'
 
-config-version: 2
 version: '0.1'
+config-version: 2
 
 profile: 'jaffle_shop'
 
@@ -24,6 +24,9 @@ seeds:
     node_color: '#cd7f32'
 
 models:
+  duckdb_lakehouse_project:
+    staging:
+      materialized: external
   jaffle_shop:
     materialized: table
     staging:

@@ -1,0 +1,22 @@
+# DuckDB config reference:
+config:
+  send_anonymous_usage_stats: False
+  use_colors: True
+lakehouse:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: data.duckdb
+      extensions:
+        - httpfs
+        - parquet
+      settings:
+        s3_access_key_id: minio-sa
+        s3_secret_access_key: minio123
+        # s3_endpoint: localhost:9000 # minio localhost
+        s3_endpoint: minio.minio.svc.cluster.local:9000
+        s3_region: us-east-1
+        s3_url_style: path
+        s3_use_ssl: false
+      threads: 24
