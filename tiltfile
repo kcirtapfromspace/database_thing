@@ -66,7 +66,7 @@ values = [
             ]
 helm_remote('minio', namespace='minio', repo_url='https://charts.min.io/', values=values)
 # k8s_resource("redpanda-configuration", labels="redpanda",resource_deps=["redpanda"])
-k8s_resource("minio", port_forwards=['9001'], labels="object", resource_deps=[])
+k8s_resource("minio", port_forwards=['9001','9000'], labels="object", resource_deps=[])
 # k8s_resource("redpanda-post-upgrade", labels="redpanda",resource_deps=["redpanda"],)
 # k8s_resource("redpanda", labels="redpanda")
 

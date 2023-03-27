@@ -104,7 +104,7 @@ makeServiceAccountJob:
 ##
 buckets:
     # Name of the bucket
-  - name: user-payments
+  - name: lakehouse
     # Policy to be set on the
     # bucket [none|download|upload|public]
     policy: public

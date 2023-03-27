@@ -20,6 +20,8 @@ spec:
       value: "kcirtapfromspace/database_thing"  # Replace this with the actual repository URL
     - name: repo-branch
       value: "go-superduck"  # Replace this with the desired branch
+    - name: enableSlackNotifications
+      value: "false"  # Set to "true" to enable notifications, "false" to skip notifications
   templates:
   - name: dag
     dag:
@@ -34,6 +36,7 @@ spec:
             value: "{{ `{{workflow.name}}` }}"
           - name: SLACK_WEBHOOK_URL
             value: "https://hooks.slack.com/services/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"
+        when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
       - name: pull-github-repo
         templateRef:
           name: pull-github-repo-template
@@ -70,3 +73,4 @@ spec:
                 value: "{{ `{{workflow.name}}` }}"
               - name: SLACK_WEBHOOK_URL
                 value: "https://hooks.slack.com/services/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"
+          when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
