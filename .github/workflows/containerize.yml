@@ -34,7 +34,6 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           flavor: |
-            latest=${{ is_default_branch }}
             suffix=-${{ github.event_name }}
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
