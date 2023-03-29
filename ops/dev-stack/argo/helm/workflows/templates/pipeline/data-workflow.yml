@@ -1,7 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
-kind: ClusterWorkflowTemplate
+kind: WorkflowTemplate
 metadata:
   name: data-workflow
+  namespace: argo
   annotations:
     workflows.argoproj.io/description: >-
       This workflow will pull a GitHub repository, and then run dbt commands on
@@ -22,6 +23,8 @@ spec:
       value: "go-superduck"  # Replace this with the desired branch
     - name: enableSlackNotifications
       value: "false"  # Set to "true" to enable notifications, "false" to skip notifications
+    - name: dbt-project
+      value: "lakehouse_demo"
   templates:
   - name: dag
     dag:
@@ -59,6 +62,8 @@ spec:
             value: "{{ `{{workflow.parameters.repo}}` }}"
           - name: repo-branch
             value: "{{ `{{workflow.parameters.repo-branch}}` }}"
+          - name: dbt-project
+            value: "{{ `{{workflow.parameters.dbt-project}}` }}"
   - name: exit-notification
     steps:
       - - name: exit-time

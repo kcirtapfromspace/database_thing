@@ -22,12 +22,14 @@ spec:
       - name: repo
       - name: repo-branch
       - name: dbt-task
-        default: "run"
+        default: "build"
+      - name: dbt-project
+        default: "lakehouse_demo"
 
     container:
-      image: ctlptl-registry:5000/dbt_argo  # Replace with desired dbt Docker container image
+      image: ctlptl-registry:5000/dbt-argo  # Replace with desired dbt Docker container image
       command: ["dbt"]
-      args: ["{{ `{{inputs.parameters.dbt-task}}` }}", "--project-dir", "/usr/app/ops/dev-stack/dbt"]
+      args: ["{{ `{{inputs.parameters.dbt-task}}` }}", "--project-dir", "/usr/app/ops/dev-stack/dbt/{{ `{{inputs.parameters.dbt-project}}` }}"]
     resources:
       requests:
         memory: 250Mi
