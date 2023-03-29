@@ -16,7 +16,10 @@ GITHUB_ACCESS_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN")
 # local_registry = local('minikube -p minikube service -n kube-system registry --url', quiet=True).strip()
 # if local_registry:
 #     default_registry(local_registry)
-default_registry('localhost:5001')
+default_registry(
+    'localhost:5001',
+    host_from_cluster='ctlptl-registry:5000'
+)
 
 # Enable Minikube addons
 # if k8s_context() == 'minikube':
@@ -39,7 +42,7 @@ default_registry('localhost:5001')
 
 # Build Docker Container Images
 docker_build('datagen', '.', dockerfile='Dockerfiles/Dockerfile.datagen')
-docker_build('dbt_argo', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final', match_in_env_vars=True,extra_tag=["dbt_argo:local"])
+docker_build('dbt_argo', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final', match_in_env_vars=True,extra_tag=["dbt-argo:local", "ctlptl-registry:5000/dbt-argo:latest"])
 docker_build('dbz_connect', '.', dockerfile='Dockerfiles/Dockerfile.debezium')
 docker_build('go_loader', '.', dockerfile='Dockerfiles/Dockerfile.go_loader')
 docker_build('psql_db', '.', dockerfile='Dockerfiles/Dockerfile.psql_db')
@@ -62,11 +65,10 @@ namespace_create('minio')
 load('ext://helm_remote', 'helm_remote')
 values = [
     "./ops/dev-stack/minio/values.yaml",
-                # "server=[serviceAccount.create=false,serviceAccount.name=argo-workflows,service.type=NodePort,extraArgs=[--secure=false]]", "--debug=true"
             ]
 helm_remote('minio', namespace='minio', repo_url='https://charts.min.io/', values=values)
-# k8s_resource("redpanda-configuration", labels="redpanda",resource_deps=["redpanda"])
 k8s_resource("minio", port_forwards=['9001','9000'], labels="object", resource_deps=[])
+# k8s_resource("redpanda-configuration", labels="redpanda",resource_deps=["redpanda"])
 # k8s_resource("redpanda-post-upgrade", labels="redpanda",resource_deps=["redpanda"],)
 # k8s_resource("redpanda", labels="redpanda")
 
@@ -90,6 +92,15 @@ k8s_resource("dbz-connect", port_forwards=[], labels="kafka", resource_deps=["re
 
 
 k8s_yaml(blob("""
+apiVersion: v1
+kind: Secret
+data:
+    .dockerconfigjson: eyJhdXRocyI6eyJjdGxwdGwtcmVnaXN0cnk6NTAwMCI6eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIiwiZW1haWwiOiJyb290QGxvY2FsaG9zdCIsImF1dGgiOiIifX19Cg==
+metadata:
+    name: ctlptl-regcred
+    namespace: argo
+type: kubernetes.io/dockerconfigjson
+---
 apiVersion: v1
 kind: Secret
 metadata:
