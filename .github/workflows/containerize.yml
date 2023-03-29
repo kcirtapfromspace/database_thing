@@ -25,11 +25,11 @@ jobs:
       matrix:
         dockerfile: 
         - dbt
-          datagen
-          debezium
-          deequ
-          go_loader
-          gx
+        - datagen
+        - debezium
+        - deequ
+        - go_loader
+        - gx
 
     steps:
       - name: Checkout repository
