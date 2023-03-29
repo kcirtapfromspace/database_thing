@@ -33,13 +33,16 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
+          flavor: |
+            latest=${{ is_default_branch() }}
+            suffix=-${{ github.event_name }}
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
             ${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
             ${{ matrix.dockerfile }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-${{ matrix.dockerfile }}
+            type=sha,prefix={{branch}}
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -58,12 +61,11 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-        with:
-          platforms: linux/amd64,linux/arm64
 
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
+          platforms: linux/amd64,linux/arm64
           context: "{{defaultContext}}"
           file: ./Dockerfiles/dockerfile.${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
