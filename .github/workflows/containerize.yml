@@ -34,6 +34,8 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
+            ${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
             ${{ matrix.dockerfile }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
