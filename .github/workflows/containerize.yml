@@ -23,7 +23,13 @@ jobs:
       packages: write
     strategy:
       matrix:
-        dockerfile: [dbt, datagen, debezium, deequ, go_loader, gx]  # Replace with the paths to your Dockerfiles
+        dockerfile: 
+        - dbt
+          datagen
+          debezium
+          deequ
+          go_loader
+          gx
 
     steps:
       - name: Checkout repository
@@ -37,8 +43,6 @@ jobs:
             suffix=-${{ github.event_name }}
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
-            ${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
-            ${{ matrix.dockerfile }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix={{branch}}
@@ -58,7 +62,7 @@ jobs:
         # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-        
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
