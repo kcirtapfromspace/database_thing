@@ -46,12 +46,11 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
 
       - name: Log in to the Container registry
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.CONTAINER_REG_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
         # Add support for more platforms with QEMU (optional)
         # https://github.com/docker/setup-qemu-action
