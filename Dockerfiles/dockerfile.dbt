@@ -44,7 +44,7 @@ ENV LANG=C.UTF-8
 ENV PYTHON_VERSION=3.9
 
 COPY --from=python_install /opt/venv/ /opt/venv/
-COPY --from=python_install /usr/lib/ /usr/lib/
+COPY --from=python_install /usr/ /usr/
 
 ENV PATH=$PATH:/opt/bin
 ENV PATH /opt/venv/bin:$PATH
