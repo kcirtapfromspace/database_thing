@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  namespace: argo
+  name: gh-sparse-clone-template
+  annotations:
+    workflows.argoproj.io/description: >-
+      This template pulls a github repo and stores it as an artifact.
+    workflows.argoproj.io/maintainer: '@kcirtapfromspace'
+    workflows.argoproj.io/maintainer_url: 'https://github.com/kcirtapfromspace/datatabase_thing'
+    workflows.argoproj.io/version: '>= 3.3.6'
+spec:
+  templates:
+  - name: gh-sparse-clone
+    inputs:
+      parameters:
+      - name: repo
+      - name: branch
+      - name: subdir
+    outputs:
+      artifacts:
+      - name: repo-data
+        path: /tmp/repo-data/
+        s3:
+          key: "{{ `{{inputs.parameters.repo}}` }}/{{ `{{inputs.parameters.branch}}` }}/{{ `{{workflow.uid}}` }}"
+    container:
+      image: alpine/git:latest
+      command: ["ash", "-c"]
+      args: [
+        "set -x && \
+        mkdir -p /tmp/repo-data && \
+        cd /tmp/repo-data && \
+        git config --global init.defaultBranch main && \
+        git init && \
+        git remote add origin https://github.com/{{ `{{inputs.parameters.repo}}` }}.git && \
+        git config core.sparseCheckout true && \
+        echo {{ `{{inputs.parameters.subdir}}` }} > .git/info/sparse-checkout && \
+        git pull origin {{ `{{inputs.parameters.branch}}` }} && \
+        mv {{ `{{inputs.parameters.subdir}}` }}/* /tmp/repo-data && \
+        rmdir {{ `{{inputs.parameters.subdir}}` }}"
+      ]
+      env:
+      - name: GITHUB_ACCESS_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: argo-secrets
+            key: GITHUB_ACCESS_TOKEN
+    resources:
+      requests:
+        memory: 250Mi
+        cpu: 4m
+    activeDeadlineSeconds: 900

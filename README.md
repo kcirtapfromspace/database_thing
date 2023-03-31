@@ -60,7 +60,17 @@ You will also need to have access to a local kubernetes cluster. If you do not h
 
 
 These are some of the options available, and you can choose the one that works best for you based on your requirements and preferences.
+### Containers
+#### tips n tricks
+
+If you need to run a container and you want to be able to run commands inside it, you can use the following command:
+
+```sh
+docker run -it --rm --entrypoint /bin/ash alpine/git
+```
+
 ### Dockerfiles
+
 The Dockerfiles for the different components of the app are located in the Dockerfiles directory. The components are:
 
 go_loader
@@ -74,7 +84,7 @@ go_loader: configuration, deployment and service files
 postgres_db: configuration, deployment and service files, as well as job files
 py_app: deployment and service files
 
-
+#### 
 ### Tiltfile
 The Tiltfile is a configuration file used by Tilt to manage the development environment. To use Tilt, you will need to install it on your machine. Tilt download link.
 
