@@ -19,8 +19,10 @@ spec:
     parameters:
     - name: repo
       value: "kcirtapfromspace/database_thing"  # Replace this with the actual repository URL
-    - name: repo-branch
+    - name: branch
       value: "go-superduck"  # Replace this with the desired branch
+    - name: subdir
+      value: "ops/dev-stack/dbt/lakehouse_demo"  # Replace this with the desired subdiectory
     - name: enableSlackNotifications
       value: "false"  # Set to "true" to enable notifications, "false" to skip notifications
     - name: dbt-project
@@ -40,28 +42,35 @@ spec:
           - name: SLACK_WEBHOOK_URL
             value: "https://hooks.slack.com/services/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"
         when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
-      - name: pull-github-repo
+      - name: gh-sparse-clone-template
         templateRef:
-          name: pull-github-repo-template
-          template: pull-github-repo
+          name: gh-sparse-clone-template
+          template: gh-sparse-clone
         dependencies: [workflow-beginning]
         arguments:
           parameters:
           - name: repo
             value: "{{ `{{workflow.parameters.repo}}` }}"
-          - name: repo-branch
-            value: "{{ `{{workflow.parameters.repo-branch}}` }}"
+          - name: branch
+            value: "{{ `{{workflow.parameters.branch}}` }}"
+          - name: subdir
+            value: "{{ `{{workflow.parameters.subdir}}` }}"
+      - name: suspend-for-debugging
+        templateRef:
+          name: suspend-debug-template
+          template: suspend-for-debugging
+        dependencies: [gh-sparse-clone-template]
       - name: dbt-build
         templateRef:
           name: dbt-process-template
           template: dbt-process
-        dependencies: [pull-github-repo]
+        dependencies: [gh-sparse-clone-template, suspend-for-debugging]
         arguments:
           parameters:
           - name: repo
             value: "{{ `{{workflow.parameters.repo}}` }}"
-          - name: repo-branch
-            value: "{{ `{{workflow.parameters.repo-branch}}` }}"
+          - name: branch
+            value: "{{ `{{workflow.parameters.branch}}` }}"
           - name: dbt-project
             value: "{{ `{{workflow.parameters.dbt-project}}` }}"
   - name: exit-notification

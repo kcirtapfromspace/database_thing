@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  namespace: argo
+  name: suspend-debug-template
+spec:
+  templates:
+  - name: suspend-for-debugging
+    suspend: {}

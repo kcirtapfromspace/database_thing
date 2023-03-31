@@ -15,21 +15,22 @@ spec:
     inputs:
       artifacts:
       - name: repo-data
-        path: /usr/app
+        path: /opt/venv/
         s3:
-          key: "{{`{{inputs.parameters.repo}}`}}/{{`{{inputs.parameters.repo-branch}}`}}/{{ `{{workflow.uid}}` }}"
+          key: "{{`{{inputs.parameters.repo}}`}}/{{`{{inputs.parameters.branch}}`}}/{{ `{{workflow.uid}}` }}"
       parameters:
       - name: repo
-      - name: repo-branch
+      - name: branch
       - name: dbt-task
         default: "build"
       - name: dbt-project
         default: "lakehouse_demo"
 
     container:
-      image: ctlptl-registry:5000/dbt-argo  # Replace with desired dbt Docker container image
-      command: ["dbt"]
-      args: ["{{ `{{inputs.parameters.dbt-task}}` }}", "--project-dir", "/usr/app/ops/dev-stack/dbt/{{ `{{inputs.parameters.dbt-project}}` }}"]
+      image: ghcr.io/kcirtapfromspace/database_thing/dbt:go-superduck732c059-push@sha256:6fff9776c3d993cc8e71e3e76665f6b4e278c5e34ef13fb8cc5aa651089636b7  # Replace with desired dbt Docker container image
+      command: ["sh", "-c"]
+      args: ["dbt {{ `{{inputs.parameters.dbt-task}}` }} ; sleep infinity"]
+      # args: ["dbt {{ `{{inputs.parameters.dbt-task}}` }} --project-dir {{ `{{inputs.parameters.dbt-project}}` }}; sleep infinity"]
     resources:
       requests:
         memory: 250Mi
