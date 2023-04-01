@@ -55,16 +55,18 @@ spec:
             value: "{{ `{{workflow.parameters.branch}}` }}"
           - name: subdir
             value: "{{ `{{workflow.parameters.subdir}}` }}"
-      - name: suspend-for-debugging
-        templateRef:
-          name: suspend-debug-template
-          template: suspend-for-debugging
-        dependencies: [gh-sparse-clone-template]
+
+      # - name: suspend-for-debugging
+      #   templateRef:
+      #     name: suspend-debug-template
+      #     template: suspend-for-debugging
+      #   dependencies: [gh-sparse-clone-template]
       - name: dbt-build
         templateRef:
           name: dbt-process-template
           template: dbt-process
-        dependencies: [gh-sparse-clone-template, suspend-for-debugging]
+        # dependencies: [gh-sparse-clone-template, suspend-for-debugging]
+        dependencies: [gh-sparse-clone-template]
         arguments:
           parameters:
           - name: repo
