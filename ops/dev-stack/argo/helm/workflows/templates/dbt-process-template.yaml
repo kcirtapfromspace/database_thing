@@ -15,7 +15,7 @@ spec:
     inputs:
       artifacts:
       - name: repo-data
-        path: /opt/venv/
+        path: "/opt/venv/{{`{{inputs.parameters.dbt-project}}`}}"
         s3:
           key: "{{`{{inputs.parameters.repo}}`}}/{{`{{inputs.parameters.branch}}`}}/{{ `{{workflow.uid}}` }}"
       parameters:
@@ -27,10 +27,19 @@ spec:
         default: "lakehouse_demo"
 
     container:
-      image: ghcr.io/kcirtapfromspace/database_thing/dbt:go-superduck732c059-push@sha256:6fff9776c3d993cc8e71e3e76665f6b4e278c5e34ef13fb8cc5aa651089636b7  # Replace with desired dbt Docker container image
-      command: ["sh", "-c"]
-      args: ["dbt {{ `{{inputs.parameters.dbt-task}}` }} ; sleep infinity"]
+      image: ghcr.io/kcirtapfromspace/database_thing/dbt:go-superduck1a5d928-push@sha256:d179add62213812983772cad4f466c306cb4bc983efe59672ada86ce6b03ef54  # Replace with desired dbt Docker container image
+      command: ["/bin/sh", "-c"]
       # args: ["dbt {{ `{{inputs.parameters.dbt-task}}` }} --project-dir {{ `{{inputs.parameters.dbt-project}}` }}; sleep infinity"]
+      env: 
+        - name: DBT_PROFILES_DIR
+          value: "/opt/venv/{{`{{inputs.parameters.dbt-project}}`}}"
+
+      args: ["cd /opt/venv/{{`{{inputs.parameters.dbt-project}}`}} && \
+                  dbt deps && \
+                  dbt {{ `{{inputs.parameters.dbt-task}}` }} && \
+                  sleep infinity"
+                  ]
+
     resources:
       requests:
         memory: 250Mi
