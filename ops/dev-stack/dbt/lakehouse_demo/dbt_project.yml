@@ -28,8 +28,7 @@ clean-targets:
 models:
   lakehouse:
     users:
-      +materialized: view
-      +directory: models/users
+      +materialized: external
     payments:
-      +materialized: view
-      +directory: models/payments
+      +enabled: true
+      +materialized: external
