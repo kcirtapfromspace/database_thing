@@ -67,6 +67,8 @@ If you need to run a container and you want to be able to run commands inside it
 
 ```sh
 docker run -it --rm --entrypoint /bin/ash alpine/git
+docker run -it --rm -v /Users/thinkstudio/repos/database_thing/ops/dev-stack/dbt/lakehouse_demo:/opt/venv/lakehouse_demo --entrypoint /bin/ash dbt
+
 ```
 
 ### Dockerfiles

@@ -26,6 +26,8 @@ clean-targets:
 models:
   lakehouse:
     users:
-      materialized: view
+      +materialized: view
+      +directory: models/users
     payments:
-      materialized: view
+      +materialized: view
+      +directory: models/payments
