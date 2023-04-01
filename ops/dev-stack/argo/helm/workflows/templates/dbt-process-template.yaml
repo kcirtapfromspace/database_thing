@@ -22,9 +22,9 @@ spec:
       - name: repo
       - name: branch
       - name: dbt-task
-        default: "build"
+        default: build
       - name: dbt-project
-        default: "lakehouse_demo"
+        default: lakehouse_demo
 
     container:
       image: ghcr.io/kcirtapfromspace/database_thing/dbt:go-superduck1a5d928-push@sha256:d179add62213812983772cad4f466c306cb4bc983efe59672ada86ce6b03ef54  # Replace with desired dbt Docker container image
@@ -44,4 +44,4 @@ spec:
       requests:
         memory: 250Mi
         cpu: 4m
-    activeDeadlineSeconds: 300
+    activeDeadlineSeconds: 900
