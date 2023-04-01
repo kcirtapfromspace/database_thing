@@ -6,7 +6,6 @@ require-dbt-version: [">=1.0.0", "<2.0.0"]
 model-paths:
   - models/users
   - models/payments
-  - models/latest_payments
 analysis-paths:
   - analysis
 test-paths:
