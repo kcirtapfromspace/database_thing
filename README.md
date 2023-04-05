@@ -18,6 +18,27 @@ Docker for Desktop: Includes a standalone Kubernetes server and client, as well 
 Kind: A tool for running local Kubernetes clusters using Docker containers as the nodes.
 Microk8s: A fast, lightweight, and easy-to-install distribution of Kubernetes that runs natively on Ubuntu.
 Kubeadm: A toolkit that helps users bootstrap a best-practice Kubernetes cluster in an easy and repeatable way.
+# Setup Personal Access Token
+To use the GitHub API, you will need to create a personal access token. You can do this by following the steps below:
+- Go to your GitHub account settings
+- Click on Developer settings
+- Click on Personal access tokens
+- Click on Generate new token
+- Give your token a name
+- Select the scopes you want to give your token
+- Click on Generate token
+- Copy the token and save it somewhere safe like a password manager
+
+## Setup Environment Variables with 1password
+I reccomend setting up a new vault with 1password for local development items
+install 1password cli
+brew install --cask 1password/tap/1password-cli
+login to 1password (link to 1password cli)
+op signin my.1password.com
+set up environment variables
+export GITHUB_ACCESS_TOKEN=op://development/github/personal_access_token_dataworkflow
+start the app with tilt
+op run -- tilt up 
 
 ## Database
 This app uses PostgreSQL for data storage. You can either use an existing database, or create a new one using [Docker](https://hub.docker.com/_/postgres).
@@ -39,7 +60,18 @@ You will also need to have access to a local kubernetes cluster. If you do not h
 
 
 These are some of the options available, and you can choose the one that works best for you based on your requirements and preferences.
+### Containers
+#### tips n tricks
+
+If you need to run a container and you want to be able to run commands inside it, you can use the following command:
+
+```sh
+docker run -it --rm --entrypoint /bin/ash alpine/git
+docker run -it --rm -v /Users/thinkstudio/repos/database_thing/ops/dev-stack/dbt/lakehouse_demo:/opt/venv/lakehouse_demo --entrypoint /bin/ash dbt
+```
+
 ### Dockerfiles
+
 The Dockerfiles for the different components of the app are located in the Dockerfiles directory. The components are:
 
 go_loader
@@ -53,7 +85,7 @@ go_loader: configuration, deployment and service files
 postgres_db: configuration, deployment and service files, as well as job files
 py_app: deployment and service files
 
-
+#### 
 ### Tiltfile
 The Tiltfile is a configuration file used by Tilt to manage the development environment. To use Tilt, you will need to install it on your machine. Tilt download link.
 

@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: user_latest_payments
+    description: "A model that combines user and payment data for the latest 3 payments per user."
+    columns:
+      - name: name
+        description: "The name of the user."
+        tests:
+          - not_null
+      - name: amount
+        description: "The payment amount."
+        tests:
+          - not_null

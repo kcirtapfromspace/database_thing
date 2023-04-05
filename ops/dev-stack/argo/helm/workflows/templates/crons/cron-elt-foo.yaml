@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: cron-elt-foo
+spec:
+  schedule: "0 */6 * * *"
+
+  workflowSpec:
+    entrypoint: do
+
+    templates:
+    - name: do
+      steps:
+      - - name: run-elt
+          templateRef:
+            name: meltano-elt-template
+            template: run-elt
+          arguments:
+            parameters:
+            - name: extractor_name
+              value: tap-foo
+            - name: loader_name
+              value: target-snowflake-prod

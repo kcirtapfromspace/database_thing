@@ -1,0 +1,11 @@
+duckdb==0.7.1
+dbt-duckdb
+# dbt-redshift
+# dbt-bigquery
+# dbt-snowflake
+# dbt-postgres
+# dbt-databricks
+# dbt-dremio
+# dbt-trino
+# dbt-athena
+# dbt-glue

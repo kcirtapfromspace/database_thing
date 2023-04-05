@@ -1,9 +1,10 @@
 FROM debezium/connect:latest
-
+ARG AIVEN_KAFKA_CONNECT_S3_VERSION=2.12.1
 USER kafka
 
-RUN curl --create-dirs -LO --output-dir /tmp/connector https://github.com/aiven/s3-connector-for-apache-kafka/releases/download/v2.12.0/aiven-kafka-connect-s3-2.12.0.zip && \
-    unzip -o /tmp/connector/aiven-kafka-connect-s3-2.12.0.zip -d /tmp/connector && \
-    mv /tmp/connector/aiven-kafka-connect-s3-2.12.0 /kafka/connect/aiven-kafka-connect-s3 && \
-    rm /tmp/connector/aiven-kafka-connect-s3-2.12.0.zip
+# RUN curl --create-dirs -LO --output-dir /tmp/connector https://github.com/aiven/s3-connector-for-apache-kafka/releases/download/v2.12.1/s3-connector-for-apache-kafka-2.12.1.zip && \
+RUN curl --create-dirs -LO --output-dir /tmp/connector https://github.com/aiven/s3-connector-for-apache-kafka/releases/download/v${AIVEN_KAFKA_CONNECT_S3_VERSION}/s3-connector-for-apache-kafka-${AIVEN_KAFKA_CONNECT_S3_VERSION}.zip && \
+    unzip -o /tmp/connector/s3-connector-for-apache-kafka-${AIVEN_KAFKA_CONNECT_S3_VERSION}.zip -d /tmp/connector && \
+    mv "/tmp/connector/s3-connector-for-apache-kafka-${AIVEN_KAFKA_CONNECT_S3_VERSION}" /kafka/connect/s3-connector-for-apache-kafka && \
+    rm "/tmp/connector/s3-connector-for-apache-kafka-${AIVEN_KAFKA_CONNECT_S3_VERSION}.zip"
 EXPOSE 8083

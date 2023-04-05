@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  namespace: argo
+  name: dbt-process-template
+  annotations:
+    workflows.argoproj.io/description: >-
+      This workflow template will pull a repository from GitHub and run dbt commands on it.
+    workflows.argoproj.io/maintainer: '@kcirtapfromspace'
+    workflows.argoproj.io/maintainer_url: 'https://github.com/kcirtapfromspace/datatabase_thing'
+    workflows.argoproj.io/version: '>= 3.3.6'
+spec:
+  templates:
+  - name: dbt-process
+    inputs:
+      artifacts:
+      - name: repo-data
+        path: "/opt/venv/{{`{{inputs.parameters.dbt-project}}`}}"
+        s3:
+          key: "{{`{{inputs.parameters.repo}}`}}/{{`{{inputs.parameters.branch}}`}}/{{ `{{workflow.uid}}` }}"
+      parameters:
+      - name: repo
+      - name: branch
+      - name: dbt-task
+        default: build
+      - name: dbt-project
+        default: lakehouse_demo
+
+    container:
+      image: ghcr.io/kcirtapfromspace/database_thing/dbt:go-superduck1a5d928-push@sha256:d179add62213812983772cad4f466c306cb4bc983efe59672ada86ce6b03ef54  # Replace with desired dbt Docker container image
+      command: ["/bin/sh", "-c"]
+      # args: ["dbt {{ `{{inputs.parameters.dbt-task}}` }} --project-dir {{ `{{inputs.parameters.dbt-project}}` }}; sleep infinity"]
+      env: 
+        - name: DBT_PROFILES_DIR
+          value: "/opt/venv/{{`{{inputs.parameters.dbt-project}}`}}"
+
+      args: ["cd /opt/venv/{{`{{inputs.parameters.dbt-project}}`}} && \
+                  dbt deps && \
+                  dbt {{ `{{inputs.parameters.dbt-task}}` }} && \
+                  sleep infinity"
+                  ]
+
+    resources:
+      requests:
+        memory: 250Mi
+        cpu: 4m
+    activeDeadlineSeconds: 900

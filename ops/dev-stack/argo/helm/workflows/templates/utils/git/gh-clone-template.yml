@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  namespace: argo
+  name: pull-github-repo-template
+  annotations:
+    workflows.argoproj.io/description: >-
+      This template pulls a github repo and stores it as an artifact.
+    workflows.argoproj.io/maintainer: '@kcirtapfromspace'
+    workflows.argoproj.io/maintainer_url: 'https://github.com/kcirtapfromspace/datatabase_thing'
+    workflows.argoproj.io/version: '>= 3.3.6'
+spec:
+  templates:
+  - name: pull-github-repo
+    container:
+      image: alpine/git:latest
+      command: ["sh", "-c"]
+      args: ["git clone --branch {{`{{inputs.parameters.repo-branch}}`}} https://github.com/{{`{{inputs.parameters.repo}}`}}.git /src"]
+      env:
+      - name: GITHUB_ACCESS_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: argo-secrets
+            key: GITHUB_ACCESS_TOKEN
+    inputs:
+      parameters:
+      - name: repo
+      - name: repo-branch
+    outputs:
+      artifacts:
+      - name: repo-data
+        path: /src
+        s3:
+          key: "{{`{{inputs.parameters.repo}}`}}/{{`{{inputs.parameters.repo-branch}}`}}/{{ `{{workflow.uid}}` }}"
+    resources:
+      requests:
+        memory: 250Mi
+        cpu: 4m
+    activeDeadlineSeconds: 300

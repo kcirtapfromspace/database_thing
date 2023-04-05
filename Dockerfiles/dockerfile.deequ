@@ -7,7 +7,13 @@ FROM apache/spark-py:v3.3.1 as spark_build
 FROM python:${PYTHON_VERSION}-slim-bullseye as deequ_build
 ENV VIRTUAL_ENV=/opt/venv
 WORKDIR /opt/venv
-RUN apt-get update && apt-get install -y gcc python3-dev  --no-install-recommends 
+RUN apt-get update && apt-get install -y gcc python3-dev  --no-install-recommends &&\
+    apt-get clean  && \
+    rm -rf \
+    /var/lib/apt/lists/* \
+    /tmp/* \
+    /var/tmp/*
+
 COPY  ./ops/dev-stack/py_app/src/quality_checks/pydeequ/requirements.txt .
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN    python3 -m venv --copies $VIRTUAL_ENV && \
@@ -17,10 +23,10 @@ RUN    python3 -m venv --copies $VIRTUAL_ENV && \
 # Install Deequ
 FROM deequ_build as deequ_install
 # ENV VIRTUAL_ENV=/opt/venv
-RUN  $VIRTUAL_ENV/bin/python3 -m pip install -U -r requirements.txt --prefer-binary -v 
+RUN  $VIRTUAL_ENV/bin/python3 -m pip install -U -r requirements.txt --prefer-binary
 
 # Final stage 
-FROM gcr.io/distroless/python3-debian11:debug
+FROM gcr.io/distroless/python3-debian11:debug as final
 ENV PYTHON_VERSION=3.9
 ENV SPARK_VERSION=3.0.3
 COPY ./ops/dev-stack/py_app/src /opt/venv

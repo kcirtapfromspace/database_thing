@@ -1,0 +1,85 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: meltano-elt-template
+spec:
+  entrypoint: run-elt
+  arguments:
+    parameters:
+    - name: extractor_name
+      value: dbt-duckdb
+    - name: loader_name
+      value: target-snowflake
+    - name: meltano_repo_branch
+      value: master
+
+  templates:
+  - name: run-elt
+    inputs:
+      parameters:
+      - name: extractor_name
+      - name: loader_name
+      artifacts:
+      - name: entrypoint
+        path: /tmp/entrypoint.py
+        raw:
+          data: |
+
+            # Enable access to private Github repos during meltano install
+            cat << EOF > $HOME/.netrc
+            # machine github.com
+            # login ${GITHUB_USERNAME}
+            # password ${GITHUB_ACCESS_TOKEN}
+            
+            # machine api.github.com
+            # login ${GITHUB_USERNAME}
+            # password ${GITHUB_ACCESS_TOKEN}
+            # EOF
+            export EXTRACTOR_NAME="{{ `{{inputs.parameters.extractor_name}}` }}"
+            export LOADER_NAME   ="{{ `{{inputs.parameters.loader_name}}` }}"
+            # prerequisites
+            meltano install extractor $EXTRACTOR_NAME
+            meltano install loader $LOADER_NAME
+            export JOB_ID="$EXTRACTOR_NAME-to-$LOADER_NAME-$(date +%s)"
+
+            # execute
+            meltano elt                             \
+              --job_id=$JOB_ID                      \
+              --extractor=$EXTRACTOR_NAME           \
+              --loader=$LOADER_NAME                
+
+    container:
+      image: meltano/meltano:latest-python3.9
+      command: ["/bin/sh", "{{ `{{inputs.artifacts.entrypoint.path}}` }}"]
+      # workingDir: "'{{ `{{inputs.artifacts.meltano-repo}}` }}' /meltano"
+      # env:
+      # - name: TAP_FOO_API_KEY
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: meltano-secrets
+      #       key: tap_foo_api_key
+      # - name: TAP_BAR_API_KEY
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: meltano-secrets
+      #       key: tap_bar_api_key
+      # - name: TARGET_SNOWFLAKE_PROD_PASSWORD
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: meltano-secrets
+      #       key: target_snowflake_prod_password
+      # - name: MELTANO_DATABASE_URI
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: meltano-secrets
+      #       key: meltano_database_uri
+      # - name: GITHUB_USERNAME
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: github-credentials
+      #       key: username
+      # - name: GITHUB_ACCESS_TOKEN
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: github-credentials
+      #       key: personal-access-token

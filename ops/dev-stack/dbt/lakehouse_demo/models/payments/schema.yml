@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: latest_payments_per_user
+    description: "A model that holds the latest 3 payments per user."
+    columns:
+      - name: value.after.user_id
+        description: "The user ID associated with the payment."
+        tests:
+          - not_null
+          # - unique
+      - name: value.after.amount
+        description: "The amount of the payment."
+        tests:
+          - not_null

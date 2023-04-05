@@ -1,17 +1,29 @@
-# Spark build stage
 ARG PYTHON_VERSION=3.9
     
 # Python build stage
 FROM python:${PYTHON_VERSION}-slim-bullseye as python_build
 WORKDIR /opt/venv
-RUN apt-get update && apt-get install -y gcc python3-dev  --no-install-recommends   &&\
+RUN apt-get update && \
+    apt-get install -y \
+        gcc \ 
+        python3-dev \
+        libsasl2-dev \
+        unixodbc-dev \
+        git \
+        ssh-client \
+        software-properties-common \
+        make \
+        build-essential \
+        ca-certificates \
+        libpq-dev \
+        --no-install-recommends && \
     apt-get clean  && \
     rm -rf \
-    /var/lib/apt/lists/* \
-    /tmp/* \
-    /var/tmp/*
+        /var/lib/apt/lists/* \
+        /tmp/* \
+        /var/tmp/*
 
-COPY  ./ops/dev-stack/py_app/src/quality_checks/great_expectations/requirements.txt .
+COPY  ./ops/dev-stack/dbt/requirements.txt .
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN python3 -m venv $VIRTUAL_ENV && \
@@ -27,15 +39,15 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # Final stage 
 FROM gcr.io/distroless/python3-debian11:debug as final
+ENV PYTHONIOENCODING=utf-8
+ENV LANG=C.UTF-8
 ENV PYTHON_VERSION=3.9
 
-COPY  ./ops/dev-stack/py_app/src /opt/venv
 COPY --from=python_install /opt/venv/ /opt/venv/
-COPY --from=python_install /usr/lib/ /usr/lib/
+COPY --from=python_install /usr/ /usr/
 
-ENV SPARK_HOME=/opt
 ENV PATH=$PATH:/opt/bin
 ENV PATH /opt/venv/bin:$PATH
 
 WORKDIR /opt/venv
-CMD ["python3", "quality_checks/great_expectations/dyno_gx.py"]
+ENTRYPOINT [ "dbt" ]

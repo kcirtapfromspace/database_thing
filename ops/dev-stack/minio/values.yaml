@@ -104,7 +104,7 @@ makeServiceAccountJob:
 ##
 buckets:
     # Name of the bucket
-  - name: user-payments
+  - name: lakehouse
     # Policy to be set on the
     # bucket [none|download|upload|public]
     policy: public
@@ -115,6 +115,12 @@ buckets:
     versioning: true
     # set objectlocking for
     # bucket [true|false] NOTE: versioning is enabled by default if you use locking
+    objectlocking: false
+    
+  - name: argo-artifacts
+    policy: public
+    purge: false
+    versioning: false
     objectlocking: false
 
 ## Additional Annotations for the Kubernetes Job makeBucketJob

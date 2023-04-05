@@ -1,0 +1,92 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: data-workflow
+  namespace: argo
+  annotations:
+    workflows.argoproj.io/description: >-
+      This workflow will pull a GitHub repository, and then run dbt commands on
+      the repository. It will then send a Slack notification with the results of
+      the workflow.
+    workflows.argoproj.io/maintainer: '@kcirtapfromspace'
+    workflows.argoproj.io/tags: data-workflow
+    workflows.argoproj.io/version: '>= 3.0.0'
+spec:
+  serviceAccountName: argo-workflow
+  entrypoint: dag
+  onExit: exit-notification
+  arguments:
+    parameters:
+    - name: repo
+      value: "kcirtapfromspace/database_thing"  # Replace this with the actual repository URL
+    - name: branch
+      value: "go-superduck"  # Replace this with the desired branch
+    - name: subdir
+      value: "ops/dev-stack/dbt/lakehouse_demo"  # Replace this with the desired subdiectory
+    - name: enableSlackNotifications
+      value: "false"  # Set to "true" to enable notifications, "false" to skip notifications
+    - name: dbt-project
+      value: "lakehouse_demo"
+  templates:
+  - name: dag
+    dag:
+      tasks:
+      - name: workflow-beginning
+        templateRef:
+          name: slack-notify-http
+          template: send-beginning
+        arguments:
+          parameters:
+          - name: WORKFLOW_NAME
+            value: "{{ `{{workflow.name}}` }}"
+          - name: SLACK_WEBHOOK_URL
+            value: "https://hooks.slack.com/services/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"
+        when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
+      - name: gh-sparse-clone-template
+        templateRef:
+          name: gh-sparse-clone-template
+          template: gh-sparse-clone
+        dependencies: [workflow-beginning]
+        arguments:
+          parameters:
+          - name: repo
+            value: "{{ `{{workflow.parameters.repo}}` }}"
+          - name: branch
+            value: "{{ `{{workflow.parameters.branch}}` }}"
+          - name: subdir
+            value: "{{ `{{workflow.parameters.subdir}}` }}"
+
+      # - name: suspend-for-debugging
+      #   templateRef:
+      #     name: suspend-debug-template
+      #     template: suspend-for-debugging
+      #   dependencies: [gh-sparse-clone-template]
+      - name: dbt-build
+        templateRef:
+          name: dbt-process-template
+          template: dbt-process
+        # dependencies: [gh-sparse-clone-template, suspend-for-debugging]
+        dependencies: [gh-sparse-clone-template]
+        arguments:
+          parameters:
+          - name: repo
+            value: "{{ `{{workflow.parameters.repo}}` }}"
+          - name: branch
+            value: "{{ `{{workflow.parameters.branch}}` }}"
+          - name: dbt-project
+            value: "{{ `{{workflow.parameters.dbt-project}}` }}"
+  - name: exit-notification
+    steps:
+      - - name: exit-time
+          templateRef:
+            name: slack-notify-http
+            template: send-completion
+          arguments:
+            parameters:
+              - name: WORKFLOW_STATUS
+                value: "{{ `{{workflow.status}}` }}"
+              - name: WORKFLOW_NAME
+                value: "{{ `{{workflow.name}}` }}"
+              - name: SLACK_WEBHOOK_URL
+                value: "https://hooks.slack.com/services/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"
+          when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
