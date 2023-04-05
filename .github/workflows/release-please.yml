@@ -7,11 +7,13 @@ on:
 
 jobs:
   release-please:
+    permissions:
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: google-github-actions/release-please-action@v3
         with:
-          release-type: simple
           command: manifest
           monorepo-tags: true
 
