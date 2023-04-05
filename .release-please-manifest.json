@@ -18,8 +18,5 @@
 			"section": "BugFixes",
 			"hidden": false
 		}
-	],
-	"packages": {
-		".": {}
-	}
+	]
 }
