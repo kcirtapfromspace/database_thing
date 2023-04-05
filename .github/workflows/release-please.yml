@@ -1,0 +1,18 @@
+name: Google - release-please
+# https://github.com/google-github-actions/release-please-action
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        with:
+          release-type: simple
+          command: manifest
+          monorepo-tags: true
+
+          
