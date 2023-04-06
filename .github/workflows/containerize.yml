@@ -39,8 +39,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          flavor: |
-            suffix=-${{ github.event_name }}
+          # flavor: |
+          #   suffix=-${{ github.event_name }}
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
           tags: |
