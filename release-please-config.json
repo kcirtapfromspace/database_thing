@@ -3,7 +3,9 @@
         "Dockerfiles": {
           "release-type": "simple"
         },
-        ".": {}
+        ".": {
+          "release-type": "simple"
+        }
     }
 }
 
