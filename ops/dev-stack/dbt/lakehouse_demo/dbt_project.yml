@@ -31,3 +31,6 @@ models:
     payments:
       +enabled: true
       +materialized: external
+
+vars:
+  enable_export: true        # set to true to export files to parquet
