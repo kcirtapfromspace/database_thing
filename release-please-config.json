@@ -1,0 +1,50 @@
+{
+    "bootstrap-sha": "58e1e01e180a103e55c2b06be8084f6f73fd09bc",
+    "plugins": ["node-workspace", "cargo-workspace"],
+    "release-type": "python",
+    "release-as": "0.1.0",
+  
+    // BREAKING CHANGE only bumps semver minor if version < 1.0.0
+    // absence defaults to false
+    "bump-minor-pre-major": true,
+  
+    // feat commits bump semver patch instead of minor if version < 1.0.0
+    // absence defaults to false
+    "bump-patch-for-minor-pre-major": true,
+  
+    // "changelog-sections": [...],
+    "release-search-depth": 400,
+    "commit-search-depth": 500,
+    "packages": {
+      ".": {
+        "release-type": "node",
+      },
+      "Dockerfiles/dockerfile.dbt": {
+        "package-name": "dbt",
+        "release-type": "node",
+        "release-as": "0.1.0"
+      },
+      "Dockerfiles/dockerfile.debezium": {
+        "package-name": "debezium",
+        "release-type": "node",
+        "release-as": "0.1.0"
+      },
+      "Dockerfiles/dockerfile.debezium": {
+        "package-name": "debezium",
+        "release-type": "node",
+        "release-as": "0.1.0"
+      },
+      "Dockerfiles/dockerfile.datagen": {
+        "package-name": "datagen",
+        "release-type": "node",
+        "release-as": "0.1.0"
+      },
+      "Dockerfiles/dockerfile.gx": {
+        "package-name": "gx",
+        "release-type": "node",
+        "release-as": "0.1.0"
+      }
+
+    }
+  
+}
