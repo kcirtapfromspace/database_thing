@@ -1,5 +1,8 @@
 # LoaderHub
+Inspo:
+https://duckdb.org/2022/10/12/modern-data-stack-in-a-box.html
 
+## Overview
 This app is a combination of Go, Python, and PostgreSQL, and requires the following prerequisites to get started with development or usage:
 
 ## Prerequisites
