@@ -12,3 +12,5 @@ jobs:
       - uses: google-github-actions/release-please-action@v3
         with:
           release-type: simple
+          bump-patch-for-minor-pre-major: true
+          bump-minor-pre-major: true
