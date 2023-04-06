@@ -48,6 +48,10 @@
 
 {
     "packages": {
-        "Dockerfiles": {}
+        "Dockerfiles": {
+          "release-type": "simple"
+        },
+        ".": {}
     }
 }
+
