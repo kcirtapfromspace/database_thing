@@ -1,6 +1,5 @@
 {
     "bootstrap-sha": "58e1e01e180a103e55c2b06be8084f6f73fd09bc",
-    "last-release-sha": "7td2b9838885b3adf52e78ddd23ac01cb819e631",
     "plugins": ["node-workspace", "cargo-workspace"],
     "release-type": "python",
     "release-as": "0.1.0",
