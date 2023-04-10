@@ -1,7 +1,6 @@
 {
     "bootstrap-sha": "58e1e01e180a103e55c2b06be8084f6f73fd09bc",
     "release-type": "simple",
-  
     // BREAKING CHANGE only bumps semver minor if version < 1.0.0
     // absence defaults to false
     "bump-minor-pre-major": true,
