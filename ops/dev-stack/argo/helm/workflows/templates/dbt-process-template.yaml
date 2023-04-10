@@ -27,7 +27,7 @@ spec:
         default: lakehouse_demo
 
     container:
-      image: ghcr.io/kcirtapfromspace/database_thing/dbt:go-superduck1a5d928-push@sha256:d179add62213812983772cad4f466c306cb4bc983efe59672ada86ce6b03ef54  # Replace with desired dbt Docker container image
+      image: ghcr.io/kcirtapfromspace/database_thing/dbt:latest  # Replace with desired dbt Docker container image
       command: ["/bin/sh", "-c"]
       # args: ["dbt {{ `{{inputs.parameters.dbt-task}}` }} --project-dir {{ `{{inputs.parameters.dbt-project}}` }}; sleep infinity"]
       env: 
