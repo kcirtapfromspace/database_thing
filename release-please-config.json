@@ -1,6 +1,5 @@
 {
     "bootstrap-sha": "58e1e01e180a103e55c2b06be8084f6f73fd09bc",
-    "plugins": ["node-workspace", "cargo-workspace"],
     "release-type": "python",
     "release-as": "0.1.0",
   
@@ -17,33 +16,33 @@
     "commit-search-depth": 500,
     "packages": {
       ".": {
-        "release-type": "node",
+        "release-type": "simple"
       },
-      "Dockerfiles/dockerfile.dbt": {
+      "Dockerfiles": {
         "package-name": "dbt",
-        "release-type": "node",
-        "release-as": "0.1.0"
-      },
-      "Dockerfiles/dockerfile.debezium": {
-        "package-name": "debezium",
-        "release-type": "node",
-        "release-as": "0.1.0"
-      },
-      "Dockerfiles/dockerfile.debezium": {
-        "package-name": "debezium",
-        "release-type": "node",
-        "release-as": "0.1.0"
-      },
-      "Dockerfiles/dockerfile.datagen": {
-        "package-name": "datagen",
-        "release-type": "node",
-        "release-as": "0.1.0"
-      },
-      "Dockerfiles/dockerfile.gx": {
-        "package-name": "gx",
-        "release-type": "node",
+        "release-type": "simple",
         "release-as": "0.1.0"
       }
+      // "Dockerfiles/dockerfile.debezium": {
+      //   "package-name": "debezium",
+      //   "release-type": "node",
+      //   "release-as": "0.1.0"
+      // },
+      // "Dockerfiles/dockerfile.debezium": {
+      //   "package-name": "debezium",
+      //   "release-type": "node",
+      //   "release-as": "0.1.0"
+      // },
+      // "Dockerfiles/dockerfile.datagen": {
+      //   "package-name": "datagen",
+      //   "release-type": "node",
+      //   "release-as": "0.1.0"
+      // },
+      // "Dockerfiles/dockerfile.gx": {
+      //   "package-name": "gx",
+      //   "release-type": "node",
+      //   "release-as": "0.1.0"
+      // }
 
     }
   
