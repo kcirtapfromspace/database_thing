@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.1 (2023-04-14)
+
+## What's Changed
+* Please-release by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/21
+* Please-release by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/22
+* Please release by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/23
+* Please-release by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/24
+* Please-release by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/25
+* Go-superduck by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/26
+* Go-superduck by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/27
+* Go-superduck by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/28
+* Update release-please.yml by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/29
+* 🔥 chore(release-please): remove release-please configuration files. by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/30
+
+
+**Full Changelog**: https://github.com/kcirtapfromspace/database_thing/compare/v0.1.0...v0.1.1
+
 ## [0.1.0](https://github.com/kcirtapfromspace/database_thing/compare/v1.0.0...v0.1.0) (2023-04-06)
 
 
