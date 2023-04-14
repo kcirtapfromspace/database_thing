@@ -66,7 +66,7 @@ load('ext://helm_remote', 'helm_remote')
 values = [
     "./ops/dev-stack/minio/values.yaml",
             ]
-helm_remote('minio', namespace='minio', repo_url='https://charts.min.io/', values=values)
+helm_remote('minio', namespace='minio', repo_url='https://charts.min.io/', values=values, version='5.0.7')
 k8s_resource("minio", port_forwards=['9001','9000'], labels="object", resource_deps=[])
 # k8s_resource("redpanda-configuration", labels="redpanda",resource_deps=["redpanda"])
 # k8s_resource("redpanda-post-upgrade", labels="redpanda",resource_deps=["redpanda"],)
@@ -174,6 +174,17 @@ CREATE_TOKEN="Bearer $(kubectl create token argo-workflows-server -n argo)"
 echo $CREATE_TOKEN > ./.argo-token.txt
 """
 local_resource("create-argo-server-token", script, resource_deps=["argo-workflows-server"],  labels="argo")
+
+run_argo_workflow = """\
+	eval ARGO_TOKEN=$(cat  ./.argo-token.txt)
+	eval ARGO_IP=$(kubectl get pods --namespace=argo -l="app.kubernetes.io/name=argo-workflows-server" -o=jsonpath="{range .items[*]}{.status.podIP}")
+	eval ARGO_TASK_NAME=$(argo --namespace=argo submit --token "$ARGO_TOKEN" --output=name --from workflowtemplate/data-workflow --parameter ip="$ARGO_IP")
+	echo ARGO_IP=$ARGO_IP
+	echo ARGO_TASK_NAME=$ARGO_TASK_NAME
+	argo --namespace=argo logs $ARGO_TASK_NAME --follow
+    argo --namespace=argo get $ARGO_TASK_NAME --output=json | jq -r '.status.phase' | grep -q 'Succeeded'
+"""
+local_resource("run-argo-workflow", run_argo_workflow, resource_deps=["argo-workflows-server", "create-argo-server-token"],  labels="argo", trigger_mode=TRIGGER_MODE_MANUAL)
 
 # k8s_resource("datagen", labels="datagen",resource_deps=["psql_db"])
 # Extensions are open-source, pre-packaged functions that extend Tilt
