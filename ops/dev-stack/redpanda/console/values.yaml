@@ -1,0 +1,30 @@
+resources:
+  limits:
+    cpu: 1
+    memory: 2Gi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+console:
+  config:
+    kafka:
+      brokers: ["redpanda-0.redpanda.kafka.svc.cluster.local:9093"]
+      sasl:
+        enabled: false
+      tls:
+        enabled: false
+      schemaRegistry:
+        enabled: true
+        urls: ["http://redpanda-0.redpanda.kafka.svc.cluster.local:8081"] 
+    connect:
+      enabled: true
+      clusters: 
+        - name: dbz-connect
+          url: http://dbz-connect.kafka.svc.cluster.local:8083
+    redpanda:
+      adminApi:
+        enabled: true
+        urls: ["http://redpanda-0.redpanda.kafka.svc.cluster.local:9644"]
+    logger:
+      level: debug # Valid values are debug, info, warn, error, and fatal

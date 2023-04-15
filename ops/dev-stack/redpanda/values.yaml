@@ -1,39 +1,15 @@
 commonLabels:
   service: redpanda
 console:
-  enabled: true
+  enabled: false
   configmap:
-    create: false
+    create: true
   secret:
-    create: false
+    create: true
   deployment:
     create: true
-  config:
-    kafka:
-      brokers: 
-      - redpanda:9093
-      schemaRegistry:
-        enabled: true
-        urls: 
-        - redpanda:8081
-    redpanda:
-      adminApi:
-        enabled: true
-        urls: 
-        - redpanda:9644 
-    connect:
-      enabled: true
-      clusters: 
-        - name: dbz-connect
-          url: http://dbz-connect.default.svc.cluster.local:8083
-          tls:
-            enabled: false 
-    # sasl:
-    #   enabled: true
-    #   username: consoles
-    #   password: consolepass
-    # tls:
-    #   enabled: false
+  config: {}
+
 tls:
   enabled: false 
 storage:
