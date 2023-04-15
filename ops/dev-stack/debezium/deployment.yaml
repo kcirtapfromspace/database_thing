@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dbz-connect
+  namespace: kafka
 spec:
   replicas: 1
   selector:
@@ -23,23 +24,23 @@ spec:
           mountPath: "/connectors"
         env:
           - name: BOOTSTRAP_SERVERS
-            value: "redpanda.redpanda.svc.cluster.local:9093"
+            value: redpanda.kafka.svc.cluster.local:9093
           - name: GROUP_ID
             value: "1"
           - name: CONFIG_STORAGE_TOPIC
-            value: "users.configs"
+            value: users.configs
           - name: OFFSET_STORAGE_TOPIC
-            value: "users.offset"
+            value: users.offset
           - name: STATUS_STORAGE_TOPIC
-            value: "users.status"
+            value: users.status
           - name: KEY_CONVERTER
-            value: " io.confluent.connect.avro.AvroConverter"
+            value:  io.confluent.connect.avro.AvroConverter
           - name: VALUE_CONVERTER
-            value: " io.confluent.connect.avro.AvroConverter"
+            value: io.confluent.connect.avro.AvroConverter
           - name: CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL
-            value: "http://redpanda.redpanda.svc.cluster.local:8081"
+            value: http://redpanda.kafka.svc.cluster.local:8081
           - name: CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL
-            value: "http://redpanda.redpanda.svc.cluster.local:8081"
+            value: http://redpanda.kafka.svc.cluster.local:8081
       # TODO: This is a hack to get the connectors to load. Need to figure out how to do this properly. 
       # https://debezium.io/documentation/reference/stable/tutorial.html#starting-kafka-connect
       # could also look at using lifecycle hooks with postStart

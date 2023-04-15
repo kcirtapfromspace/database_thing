@@ -28,6 +28,7 @@ resources:
 
 configMapGenerator:
   - name: kafka-config
+    namespace: kafka
     files:
       - debezium/config/s3-sink.json
       - debezium/config/pg-src.json
