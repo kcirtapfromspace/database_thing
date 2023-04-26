@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-loader-sql
+data:
+  go-loader.sql: |
+    CREATE USER go_loader WITH PASSWORD '${GO_LOADER_PASSWORD}';
+    GRANT CONNECT ON DATABASE postgres TO go_loader;
+    GRANT USAGE ON SCHEMA public TO go_loader;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO go_loader;

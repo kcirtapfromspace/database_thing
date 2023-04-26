@@ -2,6 +2,26 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  #tta postgres
-  - tta_postgres/db_deployment.yaml
-  - tta_postgres/db_service.yaml
+  #go loader
+  - go_loader/go_deployment.yaml
+  - go_loader/go_service.yaml
+  #postgres db
+  - postgres_db/db_deployment.yaml
+  - postgres_db/db_service.yaml
+  - postgres_db/job/go_loader_sql_configmap.yaml  
+  - postgres_db/job/create_go_loader_user_job.yaml 
+  #py app
+  - py_app/py_deployment.yaml
+  - py_app/py_service.yaml
+
+
+secretGenerator:
+# go loader
+  - name: go-loader-secret
+    envs:
+      - go_loader/config/go_loader.env
+      
+# postgres db
+  - name: postgres-secret
+    envs:
+      - postgres_db/config/postgres.env

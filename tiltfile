@@ -1,5 +1,10 @@
 # Tiltfile
-docker_build('tta-db', '.', dockerfile='Dockerfiles/Dockerfile.tta-db')
-k8s_yaml(kustomize("./ops/dev-stack"))
-k8s_resource('tta-db', port_forwards=[5432], labels="tta-db")
+docker_build('psql_db', '.', dockerfile='Dockerfiles/Dockerfile.psql_db')
+docker_build('py_app', '.', dockerfile='Dockerfiles/Dockerfile.py_app')
+docker_build('go_loader', '.', dockerfile='Dockerfiles/Dockerfile.go_loader')
 
+k8s_yaml(kustomize("./ops/dev-stack"))
+
+k8s_resource('postgres-db', port_forwards=[5432], labels="psql_db")
+k8s_resource('py-app', port_forwards=[5002], labels="py_app")
+k8s_resource('go-loader', port_forwards=[8000], labels="go_loader")
