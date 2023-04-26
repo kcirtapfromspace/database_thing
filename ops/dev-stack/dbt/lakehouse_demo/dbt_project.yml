@@ -23,13 +23,13 @@ clean-targets:
   - dbt_packages
   - logs
 
-models:
-    users:
-      user_latest_payments:
-        +materialized: view
-    payments:
-      latest_payments_per_user:
-        +materialized: view
+# models:
+#   users:
+#     user_latest_payments:
+#       +materialized: view
+#   payments:
+#     latest_payments_per_user:
+#       +materialized: view
 
 vars:
   enable_s3_export: true        # set to true to export files to parquet
