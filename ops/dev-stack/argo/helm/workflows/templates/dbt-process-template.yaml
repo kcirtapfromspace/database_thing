@@ -36,8 +36,7 @@ spec:
 
       args: ["cd /opt/venv/{{`{{inputs.parameters.dbt-project}}`}} && \
                   dbt deps && \
-                  dbt {{ `{{inputs.parameters.dbt-task}}` }} && \
-                  sleep infinity"
+                  dbt {{ `{{inputs.parameters.dbt-task}}` }}"
                   ]
 
     resources:

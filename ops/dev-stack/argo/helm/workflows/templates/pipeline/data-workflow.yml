@@ -20,7 +20,7 @@ spec:
     - name: repo
       value: "kcirtapfromspace/database_thing"  # Replace this with the actual repository URL
     - name: branch
-      value: "go-superduck"  # Replace this with the desired branch
+      value: "main"  # Replace this with the desired branch
     - name: subdir
       value: "ops/dev-stack/dbt/lakehouse_demo"  # Replace this with the desired subdiectory
     - name: enableSlackNotifications

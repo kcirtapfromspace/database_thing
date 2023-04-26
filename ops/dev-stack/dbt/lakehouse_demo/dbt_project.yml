@@ -4,8 +4,7 @@ profile: lakehouse
 config-version: 2
 require-dbt-version: [">=1.0.0", "<2.0.0"]
 model-paths:
-  - models/users
-  - models/payments
+  - models
 analysis-paths:
   - analysis
 test-paths:
@@ -24,13 +23,17 @@ clean-targets:
   - dbt_packages
   - logs
 
-
-models:
-    users:
-      +materialized: external
-    payments:
-      +enabled: true
-      +materialized: external
+# models:
+#   users:
+#     user_latest_payments:
+#       +materialized: view
+#   payments:
+#     latest_payments_per_user:
+#       +materialized: view
 
 vars:
-  enable_export: true        # set to true to export files to parquet
+  enable_s3_export: true        # set to true to export files to parquet
+  # enable_local_export: false        # set to true to export files to parquet
+on-run-end: 
+  - "{{s3_export_to_parquet( var('enable_s3_export') ) }}"
+
