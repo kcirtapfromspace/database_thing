@@ -25,10 +25,11 @@ clean-targets:
 
 models:
     users:
-      +materialized: external
+      user_latest_payments:
+        +materialized: view
     payments:
-      +enabled: true
-      +materialized: external
+      latest_payments_per_user:
+        +materialized: view
 
 vars:
   enable_s3_export: true        # set to true to export files to parquet
