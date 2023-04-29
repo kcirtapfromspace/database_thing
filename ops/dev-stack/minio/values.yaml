@@ -74,7 +74,7 @@ svcaccts:
   - accessKey: minio-sa
     secretKey: minio123
     user: minio
-    policy: readwrite
+    # policy: readwrite
   ## Or you can refer to specific secret
   # - accessKey: externalSecret
   #   existingSecret: my-secret
