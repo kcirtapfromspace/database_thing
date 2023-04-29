@@ -8,12 +8,13 @@
   "database.password": "postgres",
   "database.server.name": "postgres-db",
   "database.dbname": "postgres",
+  "errors.log.enable": true,
   "database.include.list": "postgres",
   "topic.prefix": "debezium",
   "schema.include.list": "public",
   "plugin.name": "pgoutput",
   "key.converter": "io.confluent.connect.avro.AvroConverter",
-  "key.converter.schema.registry.url": "http://redpanda.kafka.svc.cluster.local:8081",
+  "key.converter.schema.registry.url": "http://redpanda-0.redpanda.kafka.svc.cluster.local:8081",
   "value.converter": "io.confluent.connect.avro.AvroConverter",
-  "value.converter.schema.registry.url": "http://redpanda.kafka.svc.cluster.local:8081"
+  "value.converter.schema.registry.url": "http://redpanda-0.redpanda.kafka.svc.cluster.local:8081"
 }

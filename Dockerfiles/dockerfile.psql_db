@@ -1,4 +1,4 @@
-FROM postgres:13
+FROM postgres:bullseye-slim
 # note initialization files will be executed in sorted name order as defined by the current locale, which defaults to en_US.utf8. 
 COPY ./ops/dev-stack/postgres_db/config/init.sql /docker-entrypoint-initdb.d/init.sql
 COPY ./ops/dev-stack/postgres_db/config/postgresql.conf /etc/postgresql/postgresql.conf

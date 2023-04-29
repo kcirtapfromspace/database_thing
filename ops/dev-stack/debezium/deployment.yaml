@@ -24,7 +24,7 @@ spec:
           mountPath: "/connectors"
         env:
           - name: BOOTSTRAP_SERVERS
-            value: redpanda.kafka.svc.cluster.local:9093
+            value: redpanda-0.redpanda.kafka.svc.cluster.local:9093
           - name: GROUP_ID
             value: "1"
           - name: CONFIG_STORAGE_TOPIC
