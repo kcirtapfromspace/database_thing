@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0 (2023-04-29)
+
+**Full Changelog**: https://github.com/kcirtapfromspace/database_thing/compare/v0.1.1...v0.1.0
+
 ## 0.1.1 (2023-04-14)
 
 ## What's Changed
