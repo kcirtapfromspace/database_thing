@@ -1,4 +1,4 @@
-FROM debezium/connect:latest
+FROM debezium/connect:2.1.4.Final
 ARG AIVEN_KAFKA_CONNECT_S3_VERSION=2.12.1
 USER kafka
 

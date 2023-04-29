@@ -1,5 +1,6 @@
 {
   "name": "s3-sink",
+  "errors.log.enable": true,
   "connector.class": "io.aiven.kafka.connect.s3.AivenKafkaConnectS3SinkConnector",
   "aws.access.key.id": "minio",
   "aws.s3.bucket.name": "lakehouse/user-payments",
@@ -10,7 +11,7 @@
   "topics": "debezium.public.user,debezium.public.payment",
   "key.converter": "org.apache.kafka.connect.storage.StringConverter",
   "value.converter": "io.confluent.connect.avro.AvroConverter",
-  "value.converter.schema.registry.url": "http://redpanda.kafka.svc.cluster.local:8081",
+  "value.converter.schema.registry.url": "http://redpanda-0.redpanda.kafka.svc.cluster.local:8081",
   "file.compression.type": "none",
   "format.output.fields": "key,value,offset,timestamp"
 }

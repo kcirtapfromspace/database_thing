@@ -4,12 +4,12 @@ clusterDomain: miniocluster.local
 ##
 image:
   repository: quay.io/minio/minio
-  tag: RELEASE.2023-02-10T18-48-39Z
+  tag: RELEASE.2023-04-13T03-08-07Z
   pullPolicy: IfNotPresent
 
 mcImage:
   repository: quay.io/minio/mc
-  tag: RELEASE.2023-01-28T20-29-38Z
+  tag: RELEASE.2023-04-12T02-21-51Z
   pullPolicy: IfNotPresent
 
 mode: standalone ## other supported values are "standalone"
@@ -33,6 +33,11 @@ replicas: 1
 ##
 persistence:
   enabled: false
+resources:
+  requests:
+    memory: "256Mi"
+  limits:
+    memory: "512Mi"
 
 users:
   ## Username, password and policy to be assigned to the user
@@ -42,7 +47,7 @@ users:
   ## make sure to disable this if you are using LDAP.
   - accessKey: minio
     secretKey: minio123
-    policy: consoleAdmin
+    policy: readwrite
   # Or you can refer to specific secret
   #- accessKey: externalSecret
   #  existingSecret: my-secret
@@ -69,6 +74,7 @@ svcaccts:
   - accessKey: minio-sa
     secretKey: minio123
     user: minio
+    # policy: readwrite
   ## Or you can refer to specific secret
   # - accessKey: externalSecret
   #   existingSecret: my-secret
@@ -78,7 +84,6 @@ svcaccts:
   # - accessKey: console-svcacct
   #   secretKey: console123
   #   user: console
-  #   policy:
   #     statements:
   #       - resources:
   #           - 'arn:aws:s3:::example*/*'
@@ -96,7 +101,7 @@ makeServiceAccountJob:
     runAsGroup: 1000
   resources:
     requests:
-      memory: 128Mi
+      memory: 50Mi
   # Command to run after the main command on exit
   exitCommand: ""
 
@@ -131,6 +136,6 @@ makeBucketJob:
     runAsGroup: 1000
   resources:
     requests:
-      memory: 128Mi
+      memory: 50Mi
   # Command to run after the main command on exit
   exitCommand: ""
