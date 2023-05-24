@@ -1,26 +1,25 @@
 # Welcome to Tilt!
-#   More info: https://docs.tilt.dev/api.html#api.warn
+#   More info: https://docs.tilt.dev
 print("""
 -----------------------------------------------------------------
 ✨ Let's Build a Data Platform! ✨
 -----------------------------------------------------------------
 """.strip())
-# warn('ℹ️ Open {tiltfile_path} in your favorite editor to get started.'.format(
-#     tiltfile_path=config.main_path))
 
 S3_ACCESS_KEY = "minio-sa"
 S3_SECRET_KEY = "minio123"
 GITHUB_ACCESS_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN")
 
-# # look for a local registry
-# local_registry = local('minikube -p minikube service -n kube-system registry --url', quiet=True).strip()
-# if local_registry:
-#     default_registry(local_registry)
 default_registry(
-    'localhost:5001',
+    'localhost:5005',
     host_from_cluster='ctlptl-registry:5000'
 )
+# Minikube
+# # look for a local registry
+# local_registry = local('minikube -p minikube service -n kube-system registry --url', quiet=True).strip()
 
+# if local_registry:
+#     default_registry(local_registry)
 # Enable Minikube addons
 # if k8s_context() == 'minikube':
 #     local("minikube addons enable metrics-server")
@@ -43,19 +42,22 @@ default_registry(
 # Build Docker Container Images
 docker_build('evidence_dev', '.', dockerfile='Dockerfiles/Dockerfile.evidence_dev')
 docker_build('datagen', '.', dockerfile='Dockerfiles/Dockerfile.datagen')
-docker_build('dbt_argo', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final', match_in_env_vars=True,extra_tag=["dbt-argo:local", "ctlptl-registry:5000/dbt-argo:latest"])
 docker_build('dbz_connect', '.', dockerfile='Dockerfiles/Dockerfile.debezium')
 docker_build('go_loader', '.', dockerfile='Dockerfiles/Dockerfile.go_loader')
 docker_build('psql_db', '.', dockerfile='Dockerfiles/Dockerfile.psql_db')
-docker_build('py_deequ', '.', dockerfile='Dockerfiles/Dockerfile.deequ', target='final', match_in_env_vars=True,extra_tag=["deequ:local"])
-docker_build('py_gx', '.', dockerfile='Dockerfiles/Dockerfile.gx', target='final' ,match_in_env_vars=True,extra_tag=["gx:local"])
+# docker_build('dbt_argo', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final', match_in_env_vars=True,extra_tag=["dbt-argo:local", "ctlptl-registry:5000/dbt-argo:latest"]) # NOTE: container is now built with github actions
+# docker_build('py_deequ', '.', dockerfile='Dockerfiles/Dockerfile.deequ', target='final', match_in_env_vars=True,extra_tag=["deequ:local"]) # NOTE: container is now built with github actions
+# docker_build('py_gx', '.', dockerfile='Dockerfiles/Dockerfile.gx', target='final' ,match_in_env_vars=True,extra_tag=["gx:local"]) # NOTE: container is now built with github actions
 
 
-# Customize a Kubernetes resource
+# Customize Kubernetes resources
 k8s_yaml(kustomize("./ops/dev-stack"))
 k8s_resource('postgres-db', port_forwards=[5432], labels="psql_db")
-# k8s_resource('py-app', port_forwards=[5002], labels="py_app",auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
 k8s_resource('go-loader', port_forwards=[8000], labels="go_loader")
+# k8s_resource('py-gx',  labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)# dummy resource to trigger gx container build
+# k8s_resource('py-deequ', labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL )# dummy resource to trigger gx container build
+# k8s_resource('dbt-argo', labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL) # dummy resource to trigger gx container build
+
 k8s_resource('evidence-dev', labels="analytics", port_forwards=['4000'])
 
 
@@ -63,8 +65,6 @@ k8s_resource('evidence-dev', labels="analytics", port_forwards=['4000'])
 # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 load('ext://helm_remote', 'helm_remote')
 helm_remote('kube-prometheus-stack',  repo_url='https://prometheus-community.github.io/helm-charts')
-# kube-prometheus-stack-grafana
-# kube-prometheus-stack-operator
 k8s_resource("kube-prometheus-stack-prometheus-node-exporter", labels="prometheus")
 k8s_resource("kube-prometheus-stack-grafana", port_forwards=[3000], labels="prometheus")
 k8s_resource("kube-prometheus-stack-operator", port_forwards=[9090], labels="prometheus")
@@ -92,8 +92,7 @@ load('ext://namespace', 'namespace_create')
 namespace_create('kafka')
 load('ext://helm_remote', 'helm_remote')
 values = [
-    "./ops/dev-stack/redpanda/values.yaml",
-                # "server=[serviceAccount.create=false,serviceAccount.name=argo-workflows,service.type=NodePort,extraArgs=[--secure=false]]", "--debug=true"
+    "./ops/dev-stack/redpanda/values.yaml"
             ]
 helm_remote('redpanda', namespace='kafka', repo_url='https://charts.redpanda.com/', values=values, version='4.0.13')
 k8s_resource("redpanda-configuration", labels="kafka",resource_deps=["redpanda"])
@@ -172,24 +171,7 @@ k8s_resource("argo-events-controller-manager", labels="argo")
 
 # Install Argo Cluster Workflows
 k8s_yaml(helm('./ops/dev-stack/argo/helm/workflows'))
-# k8s_resource('py-gx',  labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
-# k8s_resource('py-deequ', labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
 
-
-# Run local commands
-#   Local commands can be helpful for one-time tasks like installing
-#   project prerequisites. They can also manage long-lived processes
-#   for non-containerized services or dependencies.
-#
-#   More info: https://docs.tilt.dev/local_resource.html
-
-# Generate Argo Bearer Token
-# script = """\
-# SECRET=$(kubectl get sa argo-workflows-server --namespace argo -o=jsonpath='{.secrets[0].name}')
-# ARGO_TOKEN="Bearer $(kubectl get secret --namespace argo $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
-# echo $ARGO_TOKEN > ./.argo-token.txt
-# """
-# local_resource("argo-token", script, resource_deps=["create-argo-server-token"],  labels="argo")
 script = """\
 CREATE_TOKEN="Bearer $(kubectl create token argo-workflows-server -n argo)"
 echo $CREATE_TOKEN > ./.argo-token.txt
@@ -207,10 +189,6 @@ run_argo_workflow = """\
 """
 local_resource("run-argo-workflow", run_argo_workflow, resource_deps=["argo-workflows-server", "create-argo-server-token"],  labels="argo", trigger_mode=TRIGGER_MODE_MANUAL, auto_init=False)
 
-# k8s_resource("datagen", labels="datagen",resource_deps=["psql_db"])
-# Extensions are open-source, pre-packaged functions that extend Tilt
-#
 #   More info: https://github.com/tilt-dev/tilt-extensions
-#
 secret_settings(disable_scrub=True)
 load('ext://git_resource', 'git_checkout')
