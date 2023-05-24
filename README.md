@@ -10,17 +10,23 @@ Before getting started with the development of this app, make sure you have the 
 - [Golang](https://golang.org/doc/install)
 - [Docker](https://docs.docker.com/get-docker/)
 - [Kubernetes](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- [Tilt](https://tilt.dev/install/)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 ## Local Kubernetes Cluster
 If you don't have a local kubernetes cluster set up, you can use the following:
-Minikube: A tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a Virtual Machine (VM) on your laptop.
-- [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-Docker for Desktop: Includes a standalone Kubernetes server and client, as well as Docker CLI integration.
-- [Docker for Desktop](https://www.docker.com/products/docker-desktop)
-Kind: A tool for running local Kubernetes clusters using Docker containers as the nodes.
-Microk8s: A fast, lightweight, and easy-to-install distribution of Kubernetes that runs natively on Ubuntu.
-Kubeadm: A toolkit that helps users bootstrap a best-practice Kubernetes cluster in an easy and repeatable way.
+
+- [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/): A tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a Virtual Machine (VM) on your laptop.
+
+- [Docker for Desktop](https://docs.docker.com/desktop/get-started/#kubernetes): Includes a standalone Kubernetes server and client, as well as Docker CLI integration.
+
+- [Kind](https://kind.sigs.k8s.io/): A tool for running local Kubernetes clusters using Docker containers as the nodes.
+
+- [Microk8s](https://microk8s.io/): A fast, lightweight, and easy-to-install distribution of Kubernetes that runs natively on Ubuntu.
+
+- [Kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm/): A toolkit that helps users bootstrap a best-practice Kubernetes cluster in an easy and repeatable way.
+
+- [k9s](https://k9scli.io/): A terminal based UI to interact with your Kubernetes clusters.
+
 # Setup Personal Access Token
 To use the GitHub API, you will need to create a personal access token. You can do this by following the steps below:
 - Go to your GitHub account settings
