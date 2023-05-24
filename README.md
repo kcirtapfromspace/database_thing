@@ -45,10 +45,13 @@ Install 1password cli
 ```bash 
 brew install --cask 1password/tap/1password-cli
 ```
+> **_NOTE:_**  If on a Linux machine be sure to disable the biometrics unlock with  
+`$ export $OP_BIOMETRIC_UNLOCK_ENABLED=false`
+
 login to 1password [1password CLI GitHub integration](https://developer.1password.com/docs/cli/shell-plugins/github/#step-1-create-a-github-personal-access-token)
 
 ```bash
-op signin my.1password.com
+op signin
 ```
 set up environment variables
 
