@@ -41,6 +41,7 @@ default_registry(
 # custom_build('py_gx', 'podman build -f Dockerfiles/dockerfile.gx -t gx:latest -t $EXPECTED_REF .', '.',skips_local_docker=True)
 
 # Build Docker Container Images
+docker_build('evidence_dev', '.', dockerfile='Dockerfiles/Dockerfile.evidence_dev')
 docker_build('datagen', '.', dockerfile='Dockerfiles/Dockerfile.datagen')
 docker_build('dbt_argo', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final', match_in_env_vars=True,extra_tag=["dbt-argo:local", "ctlptl-registry:5000/dbt-argo:latest"])
 docker_build('dbz_connect', '.', dockerfile='Dockerfiles/Dockerfile.debezium')
@@ -52,10 +53,12 @@ docker_build('py_gx', '.', dockerfile='Dockerfiles/Dockerfile.gx', target='final
 
 # Customize a Kubernetes resource
 k8s_yaml(kustomize("./ops/dev-stack"))
-
 k8s_resource('postgres-db', port_forwards=[5432], labels="psql_db")
 # k8s_resource('py-app', port_forwards=[5002], labels="py_app",auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)
 k8s_resource('go-loader', port_forwards=[8000], labels="go_loader")
+k8s_resource('evidence-dev', labels="analytics", port_forwards=['4000'])
+
+
 # Install Prometheus Operator
 # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 load('ext://helm_remote', 'helm_remote')

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+  labels:
+    app.kubernetes.io/name: evidence-dev
+  name: evidence-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: evidence-dev
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: evidence-dev
+    spec:
+      containers:
+        - args: ["npm", "run" ,"dev", "--", "--host", "0.0.0.0", "--port", "4000"]
+          env:
+            - name: NODE_ENV
+              value: development
+            - name: DATABASE
+              value: duckdb
+            - name: DUCKDB_FILENAME
+              value: needful_things.duckdb
+          image: evidence_dev:latest
+          name: evidence-dev
+          ports:
+            - name: evidence-dev
+              containerPort: 4000
+              protocol: TCP
+      restartPolicy: Always

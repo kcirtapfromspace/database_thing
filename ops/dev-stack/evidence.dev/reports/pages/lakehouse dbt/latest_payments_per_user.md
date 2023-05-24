@@ -77,7 +77,7 @@ LOAD 'parquet';
 
 
 -- Set up MinIO connection parameters
-SET s3_endpoint='127.0.0.1:9000';
+SET s3_endpoint='minio.minio.svc.cluster.local:9000';
 SET s3_url_style='path';
 SET s3_use_ssl=false;
 SET s3_access_key_id='minio-sa';
@@ -90,17 +90,19 @@ WITH data AS (
 FROM read_parquet('s3://lakehouse/export/latest_payments_per_user.parquet')
 )
 SELECT 
-*
+    value."after"."id" AS after_id,
+    value."after"."amount" AS after_amount,
+    value."after"."user_id" AS after_user_id
 FROM data;
 ```
 
-<BarChart 
+<!-- <BarChart 
     data={latest_payments_per_user_via_lakehouse} 
-    y=after_amount 
-    x=after_id
+    y=after_id
+    x=after_amount
     series=after_user_id
-/> 
--->
+/>  -->
+
 
 <!-- <DataTable
   data={latest_payments_per_user_via_lakehouse}
