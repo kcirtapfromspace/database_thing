@@ -39,15 +39,27 @@ To use the GitHub API, you will need to create a personal access token. You can 
 - Copy the token and save it somewhere safe like a password manager
 
 ## Setup Environment Variables with 1password
-I reccomend setting up a new vault with 1password for local development items
-install 1password cli
+I reccomend setting up a new vault with 1password for local development items.
+
+Install 1password cli
+```bash 
 brew install --cask 1password/tap/1password-cli
-login to 1password (link to 1password cli)
+```
+login to 1password [1password CLI GitHub integration](https://developer.1password.com/docs/cli/shell-plugins/github/#step-1-create-a-github-personal-access-token)
+
+```bash
 op signin my.1password.com
+```
 set up environment variables
+
+```bash 
 export GITHUB_ACCESS_TOKEN=op://development/github/personal_access_token_dataworkflow
+```
 start the app with tilt
+
+```bash
 op run -- tilt up 
+```
 
 ## Database
 This app uses PostgreSQL for data storage. You can either use an existing database, or create a new one using [Docker](https://hub.docker.com/_/postgres).
