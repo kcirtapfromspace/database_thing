@@ -9,6 +9,7 @@ This app is a combination of Go, Python, and PostgreSQL, and requires the follow
 Before getting started with the development of this app, make sure you have the following installed on your system:
 - [Golang](https://golang.org/doc/install)
 - [Docker](https://docs.docker.com/get-docker/)
+- [Helm](https://helm.sh/docs/intro/install/)
 - [Kubernetes](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 - [Tilt](https://docs.tilt.dev/install.html)
 
@@ -53,10 +54,10 @@ login to 1password [1password CLI GitHub integration](https://developer.1passwor
 ```bash
 op signin
 ```
-set up environment variables
+set access token via 1password vault path
 
 ```bash 
-export GITHUB_ACCESS_TOKEN=op://development/github/personal_access_token_dataworkflow
+export GITHUB_ACCESS_TOKEN=op://<vault>/<item>/<field>
 ```
 start the app with tilt
 
