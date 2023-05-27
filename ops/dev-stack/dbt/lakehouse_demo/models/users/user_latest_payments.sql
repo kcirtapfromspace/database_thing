@@ -8,4 +8,4 @@ SELECT
     p.value.after.amount
 FROM read_parquet('s3://lakehouse/user-payments/debezium.public.user-*') AS u
 JOIN latest_payments AS p ON u.value.after.id = p.value.after.user_id
-LIMIT 9
+

@@ -1,0 +1,19 @@
+FROM node:18-alpine3.14 as base
+ARG WORKSPACE_DIR=/evidence-workspace 
+
+RUN apk add --no-cache bash curl wget nano git xdg-utils  && \
+    npm install -g degit && \
+    mkdir -p ${WORKSPACE_DIR}
+
+FROM base as evidence_build
+
+WORKDIR ${WORKSPACE_DIR}
+
+COPY ops/dev-stack/evidence.dev/reports/ ${WORKSPACE_DIR}/
+RUN npm install && npm run build
+
+# FROM gcr.io/distroless/nodejs18-debian11 as production
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "4000"]
+
+
+EXPOSE 4000
