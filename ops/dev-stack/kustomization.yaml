@@ -14,6 +14,9 @@ resources:
   - postgres_db/job/create_go_loader_user_job.yaml 
   # datagen
   - datagen/job/postgres_datagen_job.yaml 
+  # evidence_dev
+  - evidence.dev/ed_deployment.yaml 
+  - evidence.dev/ed_service.yaml 
   # py app
   # - py_app/py_deployment.yaml
   # dbz connect

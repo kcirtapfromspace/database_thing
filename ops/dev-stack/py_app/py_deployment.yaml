@@ -64,3 +64,21 @@ spec:
       containers:
       - name: py-deequ
         image: py_deequ
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbt-argo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dbt-argo
+  template:
+    metadata:
+      labels:
+        app: dbt-argo
+    spec:
+      containers:
+      - name: dbt-argo
+        image: dbt_argo
