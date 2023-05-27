@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 (2023-05-27)
+
+## What's Changed
+* Evidence.dev by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/43
+
+
+**Full Changelog**: https://github.com/kcirtapfromspace/database_thing/compare/v0.1.2...v0.1.3
+
 ## 0.1.2 (2023-04-29)
 
 **Full Changelog**: https://github.com/kcirtapfromspace/database_thing/compare/v0.1.1...v0.1.2
