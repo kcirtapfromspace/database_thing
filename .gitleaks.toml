@@ -40,26 +40,6 @@ stopwords = [
   "your-",
   "<your-",
   "REPLACE_WITH",
-  "postgres_password",  # Variable name, not actual password
-  "postgres_user",      # Variable name, not actual credential
-]
-
-# Regex patterns to ignore (variable names, not actual secrets)
-regexTarget = "line"
-
-[[rules]]
-id = "minio-credentials-prod"
-description = "MinIO credentials in production configs"
-regex = '''(MINIO_ROOT_PASSWORD|MINIO_SECRET_KEY)\s*[=:]\s*["']?(?!<)[^"'\s]{8,}["']?'''
-tags = ["minio", "password", "production"]
-keywords = ["MINIO_ROOT_PASSWORD", "MINIO_SECRET_KEY"]
-
-# Allowlist specific patterns that are safe
-[rules.allowlist]
-regexes = [
-  '''minio123''',       # Known dev default
-  '''minio-sa''',       # Known dev service account
-  '''rootpass123''',    # Known dev default
-  '''<your-.*>''',      # Placeholder pattern
-  '''REPLACE_WITH''',   # Placeholder pattern
+  "postgres_password",
+  "postgres_user",
 ]

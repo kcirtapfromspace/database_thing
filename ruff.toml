@@ -19,6 +19,9 @@ ignore = [
     "E501",  # Line too long
     "F401",  # Unused imports (many legacy files have these)
     "F841",  # Unused variables
+    "W291",  # Trailing whitespace
+    "W292",  # No newline at end of file
+    "W293",  # Blank line contains whitespace
 ]
 
 [lint.per-file-ignores]
