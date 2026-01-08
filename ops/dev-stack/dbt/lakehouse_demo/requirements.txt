@@ -1,0 +1,24 @@
+# dbt and core dependencies - pinned for reproducibility
+dbt-core==1.7.4
+dbt-duckdb==1.7.0
+
+# Data contracts & quality
+soda-core-duckdb==3.3.1
+soda-core-scientific==3.3.1
+
+# Observability
+elementary-data[duckdb]==0.14.2
+edr==0.14.2
+
+# Iceberg & Nessie
+pyiceberg[s3,pyarrow]==0.6.0
+pynessie==0.67.1
+
+# Feast Feature Store
+feast[redis,duckdb]==0.36.0
+
+# Additional utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+pyarrow==15.0.0
+requests==2.31.0

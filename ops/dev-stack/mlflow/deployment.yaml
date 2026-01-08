@@ -1,0 +1,279 @@
+# =============================================================================
+# MLFLOW TRACKING SERVER DEPLOYMENT
+# =============================================================================
+# MLflow for experiment tracking, model registry, and artifact storage.
+# Uses MinIO for artifact storage and PostgreSQL for backend store.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlops
+  labels:
+    app.kubernetes.io/name: mlops
+    app.kubernetes.io/component: ml-platform
+
+---
+# =============================================================================
+# POSTGRESQL FOR MLFLOW BACKEND
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-postgres
+  namespace: mlops
+  labels:
+    app: mlflow-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow-postgres
+  template:
+    metadata:
+      labels:
+        app: mlflow-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: postgres-password
+        - name: POSTGRES_DB
+          value: mlflow
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "mlflow"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "mlflow"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: mlflow-postgres-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-postgres
+  namespace: mlops
+spec:
+  selector:
+    app: mlflow-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlflow-postgres-pvc
+  namespace: mlops
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# =============================================================================
+# MLFLOW TRACKING SERVER
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  namespace: mlops
+  labels:
+    app: mlflow-server
+    component: tracking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow-server
+  template:
+    metadata:
+      labels:
+        app: mlflow-server
+        component: tracking
+    spec:
+      initContainers:
+      # Wait for PostgreSQL to be ready
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h mlflow-postgres -p 5432 -U mlflow; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready"
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: postgres-password
+      # Initialize MinIO bucket for artifacts
+      - name: init-minio-bucket
+        image: minio/mc:RELEASE.2024-01-05T22-17-24Z
+        command:
+        - sh
+        - -c
+        - |
+          mc alias set minio http://minio.minio.svc.cluster.local:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+          mc mb --ignore-existing minio/mlflow-artifacts
+          mc mb --ignore-existing minio/mlflow-models
+          echo "MinIO buckets ready"
+        env:
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: minio-access-key
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: minio-secret-key
+      containers:
+      - name: mlflow
+        image: mlflow-server:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - mlflow
+        - server
+        - --backend-store-uri=postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@mlflow-postgres:5432/mlflow
+        - --default-artifact-root=s3://mlflow-artifacts/
+        - --host=0.0.0.0
+        - --port=5000
+        - --serve-artifacts
+        - --artifacts-destination=s3://mlflow-artifacts/
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: postgres-password
+        # MinIO/S3 configuration
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: minio-access-key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlflow-secrets
+              key: minio-secret-key
+        - name: MLFLOW_S3_ENDPOINT_URL
+          value: "http://minio.minio.svc.cluster.local:9000"
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+        # MLflow configuration
+        - name: MLFLOW_TRACKING_URI
+          value: "http://mlflow-server.mlops.svc.cluster.local:5000"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-server
+  namespace: mlops
+  labels:
+    app: mlflow-server
+spec:
+  selector:
+    app: mlflow-server
+  ports:
+  - name: http
+    port: 5000
+    targetPort: 5000
+  type: ClusterIP
+
+---
+# =============================================================================
+# SECRETS
+# =============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mlflow-secrets
+  namespace: mlops
+type: Opaque
+stringData:
+  postgres-user: mlflow
+  postgres-password: mlflow_secure_password_change_me
+  minio-access-key: minio
+  minio-secret-key: minio123
+
+---
+# =============================================================================
+# CONFIGMAP FOR CLIENT CONFIGURATION
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlflow-config
+  namespace: mlops
+data:
+  MLFLOW_TRACKING_URI: "http://mlflow-server.mlops.svc.cluster.local:5000"
+  MLFLOW_S3_ENDPOINT_URL: "http://minio.minio.svc.cluster.local:9000"
+  AWS_DEFAULT_REGION: "us-east-1"

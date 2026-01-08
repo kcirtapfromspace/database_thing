@@ -1,53 +1,28 @@
-ARG PYTHON_VERSION=3.9
-    
-# Python build stage
-FROM python:${PYTHON_VERSION}-slim-bullseye as python_build
-WORKDIR /opt/venv
-RUN apt-get update && \
-    apt-get install -y \
-        gcc \ 
-        python3-dev \
-        libsasl2-dev \
-        unixodbc-dev \
-        git \
-        ssh-client \
-        software-properties-common \
-        make \
-        build-essential \
-        ca-certificates \
-        libpq-dev \
-        --no-install-recommends && \
-    apt-get clean  && \
-    rm -rf \
-        /var/lib/apt/lists/* \
-        /tmp/* \
-        /var/tmp/*
+# Chainguard Python image for hardened dbt builds
+# https://images.chainguard.dev/directory/image/python/overview
+ARG PYTHON_VERSION=3.11
 
-COPY  ./ops/dev-stack/dbt/requirements.txt .
-ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN python3 -m venv $VIRTUAL_ENV && \
-    $VIRTUAL_ENV/bin/python3 -m pip install -U --upgrade pip && \
-    $VIRTUAL_ENV/bin/pip install --upgrade pip setuptools wheel psutil
+# Build stage with dev tools
+FROM cgr.dev/chainguard/python:latest-dev AS builder
 
-# Python install stage
-FROM  python_build as python_install
-# Use buildkit to cache pip dependencies
-# https://pythonspeed.com/articles/docker-cache-pip-downloads/
-RUN --mount=type=cache,target=/root/.cache \ 
-        $VIRTUAL_ENV/bin/python3 -m pip install -U --no-cache-dir -r requirements.txt --prefer-binary
+WORKDIR /app
 
-# Final stage 
-FROM gcr.io/distroless/python3-debian11:debug as final
+# Copy requirements first for better caching
+COPY ./ops/dev-stack/dbt/requirements.txt .
+
+# Install dependencies with pip
+RUN pip install --no-cache-dir -r requirements.txt --user
+
+# Final stage - minimal runtime image
+FROM cgr.dev/chainguard/python:latest AS final
+
 ENV PYTHONIOENCODING=utf-8
 ENV LANG=C.UTF-8
-ENV PYTHON_VERSION=3.9
+ENV PATH="/home/nonroot/.local/bin:$PATH"
 
-COPY --from=python_install /opt/venv/ /opt/venv/
-COPY --from=python_install /usr/ /usr/
+# Copy installed packages from builder
+COPY --from=builder /home/nonroot/.local /home/nonroot/.local
 
-ENV PATH=$PATH:/opt/bin
-ENV PATH /opt/venv/bin:$PATH
+WORKDIR /app
 
-WORKDIR /opt/venv
-ENTRYPOINT [ "dbt" ]
+ENTRYPOINT ["dbt"]

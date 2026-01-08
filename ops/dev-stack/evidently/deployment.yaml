@@ -1,0 +1,307 @@
+# =============================================================================
+# EVIDENTLY AI MODEL MONITORING
+# =============================================================================
+# Evidently for ML model monitoring: data drift, prediction drift,
+# model performance, and data quality.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: evidently
+  labels:
+    app.kubernetes.io/name: evidently
+    app.kubernetes.io/component: ml-monitoring
+
+---
+# =============================================================================
+# EVIDENTLY UI SERVICE
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evidently-ui
+  namespace: evidently
+  labels:
+    app: evidently-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evidently-ui
+  template:
+    metadata:
+      labels:
+        app: evidently-ui
+    spec:
+      containers:
+      - name: evidently-ui
+        image: evidentlyai/evidently-service:0.4.14
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: EVIDENTLY_WORKSPACE
+          value: /workspace
+        - name: EVIDENTLY_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: evidently-secrets
+              key: secret-key
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: config
+          mountPath: /config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: evidently-workspace-pvc
+      - name: config
+        configMap:
+          name: evidently-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evidently-ui
+  namespace: evidently
+spec:
+  selector:
+    app: evidently-ui
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: evidently-workspace-pvc
+  namespace: evidently
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# =============================================================================
+# EVIDENTLY COLLECTOR SERVICE
+# =============================================================================
+# Collects predictions and ground truth for monitoring
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evidently-collector
+  namespace: evidently
+  labels:
+    app: evidently-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evidently-collector
+  template:
+    metadata:
+      labels:
+        app: evidently-collector
+    spec:
+      containers:
+      - name: collector
+        image: python:3.11-slim
+        command:
+        - python
+        - /app/collector.py
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "redpanda.redpanda.svc.cluster.local:9092"
+        - name: PREDICTIONS_TOPIC
+          value: "ml.predictions"
+        - name: EVIDENTLY_WORKSPACE
+          value: /workspace
+        - name: MLFLOW_TRACKING_URI
+          value: "http://mlflow-server.mlops.svc.cluster.local:5000"
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: app
+          mountPath: /app
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: evidently-workspace-pvc
+      - name: app
+        configMap:
+          name: evidently-collector-app
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evidently-collector
+  namespace: evidently
+spec:
+  selector:
+    app: evidently-collector
+  ports:
+  - name: http
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP
+
+---
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evidently-config
+  namespace: evidently
+data:
+  config.yaml: |
+    # Evidently configuration
+    workspace:
+      path: /workspace
+
+    # Projects to monitor
+    projects:
+      - name: fraud-detection
+        description: "Fraud detection model monitoring"
+        model_name: fraud_detection_model
+
+      - name: user-personalization
+        description: "User personalization model monitoring"
+        model_name: personalization_model
+
+    # Monitoring schedule
+    monitoring:
+      # Data drift check every hour
+      data_drift:
+        schedule: "0 * * * *"
+        reference_window: 7d
+        current_window: 1d
+
+      # Prediction drift check every 4 hours
+      prediction_drift:
+        schedule: "0 */4 * * *"
+        reference_window: 7d
+        current_window: 1d
+
+      # Model performance check daily
+      performance:
+        schedule: "0 0 * * *"
+        window: 1d
+
+    # Alerting thresholds
+    alerts:
+      data_drift:
+        dataset_drift_share: 0.3
+        column_drift_threshold: 0.1
+
+      prediction_drift:
+        threshold: 0.15
+
+      performance:
+        accuracy_drop: 0.05
+        f1_drop: 0.05
+
+    # Notification channels
+    notifications:
+      slack:
+        webhook_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#ml-alerts"
+
+      pagerduty:
+        service_key: "${PAGERDUTY_SERVICE_KEY}"
+
+---
+# =============================================================================
+# SECRETS
+# =============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: evidently-secrets
+  namespace: evidently
+type: Opaque
+stringData:
+  secret-key: evidently-secret-key-change-me
+  slack-webhook-url: ""
+  pagerduty-service-key: ""
+
+---
+# =============================================================================
+# DRIFT DETECTION CRONJOB
+# =============================================================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: evidently-drift-check
+  namespace: evidently
+spec:
+  schedule: "0 * * * *"  # Every hour
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: drift-check
+            image: python:3.11-slim
+            command:
+            - python
+            - /app/drift_check.py
+            env:
+            - name: EVIDENTLY_WORKSPACE
+              value: /workspace
+            - name: MLFLOW_TRACKING_URI
+              value: "http://mlflow-server.mlops.svc.cluster.local:5000"
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: evidently-secrets
+                  key: slack-webhook-url
+            volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: app
+              mountPath: /app
+          volumes:
+          - name: workspace
+            persistentVolumeClaim:
+              claimName: evidently-workspace-pvc
+          - name: app
+            configMap:
+              name: evidently-drift-app
+          restartPolicy: OnFailure

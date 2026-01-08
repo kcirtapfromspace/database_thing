@@ -1,12 +1,23 @@
+import os
 import pandas as pd
 from sqlalchemy import create_engine, MetaData
 from tabulate import tabulate
 
 pd.options.display.max_rows = None
 pd.options.display.max_columns = None
-# specify the connection string 
-connection_string = "postgresql://postgres:postgres@localhost:5432"
-engine = create_engine(connection_string +'/postgres')
+
+# Load database configuration from environment variables
+postgres_user = os.getenv("POSTGRES_USER", "postgres")
+postgres_password = os.getenv("POSTGRES_PASSWORD")
+postgres_host = os.getenv("POSTGRES_HOST", "localhost")
+postgres_port = os.getenv("POSTGRES_PORT", "5432")
+
+if not postgres_password:
+    raise ValueError("POSTGRES_PASSWORD environment variable must be set")
+
+# Build connection string from environment variables
+connection_string = f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}"
+engine = create_engine(connection_string + '/postgres')
 metadata = MetaData()
 metadata.reflect(bind=engine)
 

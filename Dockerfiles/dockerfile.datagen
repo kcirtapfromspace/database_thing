@@ -1,11 +1,28 @@
-FROM python:3.9-slim-buster
+# Chainguard Python image for hardened, minimal footprint
+# https://images.chainguard.dev/directory/image/python/overview
+FROM cgr.dev/chainguard/python:latest-dev AS builder
 
 WORKDIR /app
 
+# Copy requirements first for better caching
+COPY ./ops/dev-stack/datagen/src/requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt --user
+
+# Final stage - minimal runtime image
+FROM cgr.dev/chainguard/python:latest
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /home/nonroot/.local /home/nonroot/.local
+
+# Copy application code
 COPY ./ops/dev-stack/datagen/src/ .
-RUN python3 -m  pip install -U --upgrade pip && \
-    python3 -m pip install -U -r requirements.txt --prefer-binary  --no-cache-dir -v
 
 ENV RUNTIME_ENVIRONMENT="DOCKER"
+ENV PATH="/home/nonroot/.local/bin:$PATH"
 
-CMD ["python", "user_payments_generator.py"]
+# Run as non-root (default in Chainguard images)
+CMD ["user_payments_generator.py"]

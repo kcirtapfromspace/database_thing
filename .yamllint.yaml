@@ -1,0 +1,32 @@
+# YAML linting configuration
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+  document-start: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+  empty-lines:
+    max: 2
+
+ignore: |
+  .venv/
+  venv/
+  node_modules/
+  ops/dev-stack/*/templates/
+  ops/dev-stack/*/charts/
+  target/
+  dbt_packages/

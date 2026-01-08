@@ -1,0 +1,50 @@
+# Gitleaks configuration for secret detection
+# Documentation: https://github.com/gitleaks/gitleaks
+
+[extend]
+useDefault = true
+
+# Custom rules for project-specific secrets
+[[rules]]
+id = "minio-credentials"
+description = "MinIO default credentials"
+regex = '''(minio123|rootpass123|minio-sa)'''
+tags = ["minio", "password"]
+keywords = ["minio", "rootpass", "secretkey"]
+
+[[rules]]
+id = "postgres-default-password"
+description = "PostgreSQL default password pattern"
+regex = '''password["\s:=]+["']?postgres["']?'''
+tags = ["postgres", "password"]
+
+[[rules]]
+id = "hardcoded-localhost-credentials"
+description = "Credentials with localhost in connection string"
+regex = '''://\w+:\w+@(localhost|127\.0\.0\.1)'''
+tags = ["credentials", "localhost"]
+
+# Allowlist for example files and test fixtures
+[allowlist]
+description = "Allow example files and documentation"
+paths = [
+  '''\.env\.example$''',
+  '''\.example\.yaml$''',
+  '''values\.example\.yaml$''',
+  '''docs/.*\.md$''',
+  '''README\.md$''',
+  '''CONTRIBUTING\.md$''',
+  '''\.gitleaks\.toml$''',
+]
+
+# Allow commits that contain these patterns (for fixing existing issues)
+commits = []
+
+# Stopwords that should not be flagged
+stopwords = [
+  "example",
+  "placeholder",
+  "your-",
+  "<your-",
+  "REPLACE_WITH",
+]

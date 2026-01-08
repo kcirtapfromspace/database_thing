@@ -1,0 +1,321 @@
+---
+# Elementary Data Observability UI Deployment
+# Provides dbt observability dashboard with anomaly detection
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: elementary
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elementary-config
+  namespace: elementary
+data:
+  # Elementary configuration
+  ELEMENTARY_PROFILE: "elementary"
+  DBT_PROJECT_DIR: "/dbt"
+  DBT_PROFILES_DIR: "/dbt"
+
+  # Report settings
+  REPORT_TITLE: "Data Platform Observability"
+  DAYS_BACK: "7"
+
+  # Slack integration (for alerts)
+  SLACK_CHANNEL: "#data-alerts"
+
+  # S3/MinIO for report storage
+  S3_ENDPOINT: "http://minio.minio.svc.cluster.local:9000"
+  S3_BUCKET: "elementary-reports"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: elementary-secrets
+  namespace: elementary
+type: Opaque
+stringData:
+  # MinIO credentials
+  AWS_ACCESS_KEY_ID: "minio-sa"
+  AWS_SECRET_ACCESS_KEY: "minio123"
+  # Slack webhook for alerts
+  SLACK_WEBHOOK_URL: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elementary-data
+  namespace: elementary
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elementary-ui
+  namespace: elementary
+  labels:
+    app: elementary-ui
+    component: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elementary-ui
+  template:
+    metadata:
+      labels:
+        app: elementary-ui
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      initContainers:
+        # Generate initial report
+        - name: init-report
+          image: ghcr.io/elementary-data/elementary:0.14.2
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Generating initial Elementary report..."
+              cd /dbt
+
+              # Install dbt packages if needed
+              if [ ! -d "dbt_packages" ]; then
+                dbt deps --profiles-dir /dbt
+              fi
+
+              # Generate Elementary report
+              edr report \
+                --profiles-dir /dbt \
+                --project-dir /dbt \
+                --days-back ${DAYS_BACK:-7} \
+                --file-path /reports/elementary_report.html \
+                || echo "Report generation failed, will retry later"
+
+              echo "Initial report generation complete"
+          envFrom:
+            - configMapRef:
+                name: elementary-config
+            - secretRef:
+                name: elementary-secrets
+          volumeMounts:
+            - name: dbt-project
+              mountPath: /dbt
+            - name: reports
+              mountPath: /reports
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+
+      containers:
+        - name: elementary-ui
+          image: ghcr.io/elementary-data/elementary:0.14.2
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Start simple HTTP server to serve reports
+              cd /reports
+              python -m http.server 8080
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: elementary-config
+            - secretRef:
+                name: elementary-secrets
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+        # Sidecar for periodic report regeneration
+        - name: report-generator
+          image: ghcr.io/elementary-data/elementary:0.14.2
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              while true; do
+                echo "$(date): Regenerating Elementary report..."
+                cd /dbt
+
+                edr report \
+                  --profiles-dir /dbt \
+                  --project-dir /dbt \
+                  --days-back ${DAYS_BACK:-7} \
+                  --file-path /reports/elementary_report.html \
+                  || echo "Report generation failed"
+
+                # Also generate JSON for API consumption
+                edr report \
+                  --profiles-dir /dbt \
+                  --project-dir /dbt \
+                  --days-back ${DAYS_BACK:-7} \
+                  --file-path /reports/elementary_report.json \
+                  --executions-limit 30 \
+                  || echo "JSON report generation failed"
+
+                echo "$(date): Report regeneration complete, sleeping for 1 hour..."
+                sleep 3600
+              done
+          envFrom:
+            - configMapRef:
+                name: elementary-config
+            - secretRef:
+                name: elementary-secrets
+          volumeMounts:
+            - name: dbt-project
+              mountPath: /dbt
+            - name: reports
+              mountPath: /reports
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+
+      volumes:
+        - name: dbt-project
+          persistentVolumeClaim:
+            claimName: dbt-project-pvc
+        - name: reports
+          persistentVolumeClaim:
+            claimName: elementary-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elementary-ui
+  namespace: elementary
+  labels:
+    app: elementary-ui
+spec:
+  selector:
+    app: elementary-ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+# CronJob for sending alerts
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: elementary-alerts
+  namespace: elementary
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: alerter
+              image: ghcr.io/elementary-data/elementary:0.14.2
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  cd /dbt
+
+                  echo "Checking for new alerts..."
+
+                  # Send alerts to Slack
+                  if [ -n "$SLACK_WEBHOOK_URL" ]; then
+                    edr monitor send-report \
+                      --profiles-dir /dbt \
+                      --project-dir /dbt \
+                      --slack-webhook "$SLACK_WEBHOOK_URL" \
+                      --slack-channel "${SLACK_CHANNEL:-#data-alerts}" \
+                      --days-back 1 \
+                      || echo "Slack alert failed"
+                  fi
+
+                  # Also send to AI enricher webhook
+                  if [ -n "$AI_ENRICHER_URL" ]; then
+                    # Export alerts as JSON and send to enricher
+                    edr monitor report \
+                      --profiles-dir /dbt \
+                      --project-dir /dbt \
+                      --days-back 1 \
+                      --file-path /tmp/alerts.json \
+                      || echo "Alert export failed"
+
+                    if [ -f /tmp/alerts.json ]; then
+                      curl -X POST "$AI_ENRICHER_URL/webhook/elementary" \
+                        -H "Content-Type: application/json" \
+                        -d @/tmp/alerts.json \
+                        || echo "AI enricher webhook failed"
+                    fi
+                  fi
+
+                  echo "Alert check complete"
+              env:
+                - name: AI_ENRICHER_URL
+                  value: "http://alert-enricher.ai-observability.svc.cluster.local:8080"
+              envFrom:
+                - configMapRef:
+                    name: elementary-config
+                - secretRef:
+                    name: elementary-secrets
+              volumeMounts:
+                - name: dbt-project
+                  mountPath: /dbt
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+
+          volumes:
+            - name: dbt-project
+              persistentVolumeClaim:
+                claimName: dbt-project-pvc
+---
+# ServiceMonitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: elementary-ui
+  namespace: elementary
+  labels:
+    app: elementary-ui
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: elementary-ui
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
