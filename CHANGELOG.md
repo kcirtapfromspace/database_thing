@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 (2026-01-08)
+
+## What's Changed
+* Evidence.dev by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/43
+* feat: production-ready security, CI/CD, and versioning by @kcirtapfromspace in https://github.com/kcirtapfromspace/database_thing/pull/45
+
+
+**Full Changelog**: https://github.com/kcirtapfromspace/database_thing/compare/v0.1.2...v0.1.3
+
 ## 0.1.2 (2023-04-29)
 
 **Full Changelog**: https://github.com/kcirtapfromspace/database_thing/compare/v0.1.1...v0.1.2
