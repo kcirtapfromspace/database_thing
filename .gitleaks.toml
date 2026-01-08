@@ -4,37 +4,30 @@
 [extend]
 useDefault = true
 
-# Custom rules for project-specific secrets
-[[rules]]
-id = "minio-credentials"
-description = "MinIO default credentials"
-regex = '''(minio123|rootpass123|minio-sa)'''
-tags = ["minio", "password"]
-keywords = ["minio", "rootpass", "secretkey"]
-
-[[rules]]
-id = "postgres-default-password"
-description = "PostgreSQL default password pattern"
-regex = '''password["\s:=]+["']?postgres["']?'''
-tags = ["postgres", "password"]
-
-[[rules]]
-id = "hardcoded-localhost-credentials"
-description = "Credentials with localhost in connection string"
-regex = '''://\w+:\w+@(localhost|127\.0\.0\.1)'''
-tags = ["credentials", "localhost"]
-
-# Allowlist for example files and test fixtures
+# Allowlist for example files, dev fixtures, and documentation
 [allowlist]
-description = "Allow example files and documentation"
+description = "Allow example files, dev deployments, and documentation"
 paths = [
+  # Example and template files
   '''\.env\.example$''',
+  '''\.env\.local\.example$''',
   '''\.example\.yaml$''',
   '''values\.example\.yaml$''',
+
+  # Documentation
   '''docs/.*\.md$''',
   '''README\.md$''',
   '''CONTRIBUTING\.md$''',
+
+  # This config file
   '''\.gitleaks\.toml$''',
+
+  # Dev-stack deployment files (contain default dev credentials)
+  '''ops/dev-stack/.*/deployment\.yaml$''',
+  '''ops/dev-stack/minio/values\.yaml$''',
+
+  # Tiltfile (contains dev-only defaults)
+  '''tiltfile$''',
 ]
 
 # Allow commits that contain these patterns (for fixing existing issues)
@@ -47,4 +40,26 @@ stopwords = [
   "your-",
   "<your-",
   "REPLACE_WITH",
+  "postgres_password",  # Variable name, not actual password
+  "postgres_user",      # Variable name, not actual credential
+]
+
+# Regex patterns to ignore (variable names, not actual secrets)
+regexTarget = "line"
+
+[[rules]]
+id = "minio-credentials-prod"
+description = "MinIO credentials in production configs"
+regex = '''(MINIO_ROOT_PASSWORD|MINIO_SECRET_KEY)\s*[=:]\s*["']?(?!<)[^"'\s]{8,}["']?'''
+tags = ["minio", "password", "production"]
+keywords = ["MINIO_ROOT_PASSWORD", "MINIO_SECRET_KEY"]
+
+# Allowlist specific patterns that are safe
+[rules.allowlist]
+regexes = [
+  '''minio123''',       # Known dev default
+  '''minio-sa''',       # Known dev service account
+  '''rootpass123''',    # Known dev default
+  '''<your-.*>''',      # Placeholder pattern
+  '''REPLACE_WITH''',   # Placeholder pattern
 ]

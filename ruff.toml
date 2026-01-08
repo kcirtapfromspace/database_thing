@@ -1,0 +1,27 @@
+# Ruff configuration
+# https://docs.astral.sh/ruff/configuration/
+
+# Exclude paths from linting entirely
+exclude = [
+    "ops/dev-stack/evidence.dev/**",
+    "**/node_modules/**",
+    "**/.venv/**",
+    "**/venv/**",
+    "**/dbt_packages/**",
+]
+
+[lint]
+# Enable common rules
+select = ["E", "F", "W"]
+
+# Ignore specific rules that are too noisy for legacy code
+ignore = [
+    "E501",  # Line too long
+    "F401",  # Unused imports (many legacy files have these)
+    "F841",  # Unused variables
+]
+
+[lint.per-file-ignores]
+# Ignore errors in legacy/experimental code
+"ops/dev-stack/py_app/src/quality_checks/**" = ["F821", "E401"]
+"ops/dev-stack/py_app/src/test/**" = ["F821", "F841"]

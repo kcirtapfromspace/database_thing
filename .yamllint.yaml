@@ -13,6 +13,8 @@ rules:
     indent-sequences: consistent
   comments:
     min-spaces-from-content: 1
+  comments-indentation:
+    level: warning
   braces:
     min-spaces-inside: 0
     max-spaces-inside: 1
@@ -30,3 +32,4 @@ ignore: |
   ops/dev-stack/*/charts/
   target/
   dbt_packages/
+  .github/

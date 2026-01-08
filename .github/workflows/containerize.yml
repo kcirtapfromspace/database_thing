@@ -21,13 +21,13 @@ jobs:
       packages: write
     strategy:
       matrix:
-        dockerfile: 
-        - dbt
-        - datagen
-        - debezium
-        - deequ
-        - go_loader
-        - gx
+        dockerfile:
+          - dbt
+          - datagen
+          - debezium
+          - deequ
+          - go_loader
+          - gx
 
     steps:
       - name: Checkout repository
