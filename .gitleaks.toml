@@ -1,0 +1,45 @@
+# Gitleaks configuration for secret detection
+# Documentation: https://github.com/gitleaks/gitleaks
+
+[extend]
+useDefault = true
+
+# Allowlist for example files, dev fixtures, and documentation
+[allowlist]
+description = "Allow example files, dev deployments, and documentation"
+paths = [
+  # Example and template files
+  '''\.env\.example$''',
+  '''\.env\.local\.example$''',
+  '''\.example\.yaml$''',
+  '''values\.example\.yaml$''',
+
+  # Documentation
+  '''docs/.*\.md$''',
+  '''README\.md$''',
+  '''CONTRIBUTING\.md$''',
+
+  # This config file
+  '''\.gitleaks\.toml$''',
+
+  # Dev-stack deployment files (contain default dev credentials)
+  '''ops/dev-stack/.*/deployment\.yaml$''',
+  '''ops/dev-stack/minio/values\.yaml$''',
+
+  # Tiltfile (contains dev-only defaults)
+  '''tiltfile$''',
+]
+
+# Allow commits that contain these patterns (for fixing existing issues)
+commits = []
+
+# Stopwords that should not be flagged
+stopwords = [
+  "example",
+  "placeholder",
+  "your-",
+  "<your-",
+  "REPLACE_WITH",
+  "postgres_password",
+  "postgres_user",
+]

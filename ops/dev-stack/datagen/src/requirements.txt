@@ -1,2 +1,5 @@
-psycopg2-binary
-Faker
+# Database connectivity
+psycopg2-binary==2.9.9
+
+# Fake data generation
+Faker==22.0.0

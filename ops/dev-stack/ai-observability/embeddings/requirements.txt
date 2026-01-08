@@ -1,0 +1,16 @@
+# Embedding pipeline dependencies - pinned for reproducibility
+
+# HTTP client
+requests==2.31.0
+
+# YAML parsing (for runbook frontmatter)
+pyyaml==6.0.1
+
+# PostgreSQL (for incidents database)
+psycopg2-binary==2.9.9
+
+# Data handling
+pandas==2.1.4
+
+# Async support
+aiohttp==3.9.1

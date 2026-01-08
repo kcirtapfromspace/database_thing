@@ -47,7 +47,16 @@ __pycache__/
 **/.venv/
 venv/
 env/
+
+# Environment and Secrets #
 .env
+.env.local
+!*.env.example
+ops/dev-stack/*/config/*.env
+!ops/dev-stack/*/config/*.env.example
+
+# MinIO values with secrets (use values.example.yaml as template)
+ops/dev-stack/minio/values.yaml
 
 # IDE files #
 .vscode/

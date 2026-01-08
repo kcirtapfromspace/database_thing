@@ -1,0 +1,176 @@
+---
+# Ollama Deployment for Local LLM Inference
+# Runs Llama 3 / Mistral for routine AI tasks
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-config
+  namespace: ai-observability
+data:
+  # Models to pre-pull on startup
+  OLLAMA_MODELS: "llama3:8b,mistral:7b,nomic-embed-text"
+  # Keep models loaded in memory
+  OLLAMA_KEEP_ALIVE: "24h"
+  # Number of parallel requests
+  OLLAMA_NUM_PARALLEL: "2"
+  # Max loaded models
+  OLLAMA_MAX_LOADED_MODELS: "2"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: ai-observability
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi  # Models can be large
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ai-observability
+  labels:
+    app: ollama
+    component: llm-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      initContainers:
+        # Pull models on startup
+        - name: model-puller
+          image: ollama/ollama:0.1.47
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Start ollama server in background
+              ollama serve &
+              sleep 10
+
+              # Pull required models
+              echo "Pulling Llama 3 8B..."
+              ollama pull llama3:8b || true
+
+              echo "Pulling Mistral 7B..."
+              ollama pull mistral:7b || true
+
+              echo "Pulling embedding model..."
+              ollama pull nomic-embed-text || true
+
+              echo "Model pull complete"
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 8Gi
+
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.1.47
+          ports:
+            - containerPort: 11434
+              name: http
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+            - name: OLLAMA_KEEP_ALIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: ollama-config
+                  key: OLLAMA_KEEP_ALIVE
+            - name: OLLAMA_NUM_PARALLEL
+              valueFrom:
+                configMapKeyRef:
+                  name: ollama-config
+                  key: OLLAMA_NUM_PARALLEL
+            - name: OLLAMA_MAX_LOADED_MODELS
+              valueFrom:
+                configMapKeyRef:
+                  name: ollama-config
+                  key: OLLAMA_MAX_LOADED_MODELS
+          resources:
+            limits:
+              cpu: 4000m
+              memory: 16Gi  # LLMs need significant memory
+            requests:
+              cpu: 2000m
+              memory: 8Gi
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: ai-observability
+  labels:
+    app: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+  type: ClusterIP
+---
+# Job to warm up models after deployment
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-warmup
+  namespace: ai-observability
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: warmup
+          image: curlimages/curl:8.5.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for Ollama to be ready..."
+              sleep 60
+
+              echo "Warming up Llama 3..."
+              curl -X POST http://ollama.ai-observability.svc.cluster.local:11434/api/generate \
+                -d '{"model": "llama3:8b", "prompt": "Hello", "stream": false}' || true
+
+              echo "Warming up Mistral..."
+              curl -X POST http://ollama.ai-observability.svc.cluster.local:11434/api/generate \
+                -d '{"model": "mistral:7b", "prompt": "Hello", "stream": false}' || true
+
+              echo "Warmup complete"

@@ -9,13 +9,17 @@ from time import sleep
 
 
 def main():
-    if os.getenv("RUNTIME_ENVIRONMENT") == "DOCKER":
-        postgres_host = "postgres-db"
-    else:
-        postgres_host = "localhost"
+    # Load database configuration from environment variables
+    postgres_host = os.getenv("POSTGRES_HOST", "postgres-db" if os.getenv("RUNTIME_ENVIRONMENT") == "DOCKER" else "localhost")
+    postgres_db = os.getenv("POSTGRES_DBNAME", "postgres")
+    postgres_user = os.getenv("POSTGRES_USER", "postgres")
+    postgres_password = os.getenv("POSTGRES_PASSWORD")
+
+    if not postgres_password:
+        raise ValueError("POSTGRES_PASSWORD environment variable must be set")
 
     # Use a context manager for the database connection
-    with psycopg2.connect(host=postgres_host, database="postgres", user="postgres", password="postgres") as conn:
+    with psycopg2.connect(host=postgres_host, database=postgres_db, user=postgres_user, password=postgres_password) as conn:
         with conn.cursor() as cur:
             fake = Faker()
 
