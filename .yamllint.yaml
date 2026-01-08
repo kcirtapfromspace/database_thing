@@ -28,8 +28,7 @@ ignore: |
   .venv/
   venv/
   node_modules/
-  ops/dev-stack/*/templates/
-  ops/dev-stack/*/charts/
+  ops/dev-stack/
   target/
   dbt_packages/
   .github/
