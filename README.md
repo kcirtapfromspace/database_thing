@@ -18,11 +18,14 @@ Before getting started with the development of this app, make sure you have the 
 - [Golang](https://golang.org/doc/install)
 - [Python](https://www.python.org/downloads/)
 - [Docker](https://docs.docker.com/get-docker/)
+- [Helm](https://helm.sh/docs/intro/install/)
 - [Kubernetes](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- [Tilt](https://tilt.dev/install/)
+- [Tilt](https://docs.tilt.dev/install.html)
 
 ### Local Kubernetes Cluster
 If you don't have a local kubernetes cluster set up, you can use the following:
+
+=======
 Minikube: A tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a Virtual Machine (VM) on your laptop. Kind, K3s and Microk8s are other options that you can use. You can find more information about these tools below:
 
 
@@ -96,18 +99,32 @@ To use the GitHub API, you will need to create a personal access token. You can 
 - Click on Generate token
 - Copy the token and save it somewhere safe like a password manager
 
+
 #### Setup Environment Variables with 1password
 I recommend setting up a new vault with 1password for local development items
 Here is a sample workflow for setting up the environment variables for this app. I've included the 1password cli commands to make it easy to follow along.
-``` sh
-# install 1password cli
+
+Install 1password cli
+```bash 
 ❯ brew install --cask 1password/tap/1password-cli
-# login to 1password (link to 1password cli)
+```
+> **_NOTE:_**  If on a Linux machine be sure to disable the biometrics unlock with  
+`$ export $OP_BIOMETRIC_UNLOCK_ENABLED=false`
+
+login to 1password [1password CLI GitHub integration](https://developer.1password.com/docs/cli/shell-plugins/github/#step-1-create-a-github-personal-access-token)
+
+```bash
 ❯  $(op signin --acount my.1password.com)
-# set up environment variables
-❯ export GITHUB_ACCESS_TOKEN=op://development/github/personal_access_token_dataworkflow
-# start the app with tilt
-❯ op run -- tilt up
+```
+set access token via 1password vault path
+
+```bash 
+❯ export GITHUB_ACCESS_TOKEN=op://<vault>/<item>/<field>
+```
+start the app with tilt
+
+```bash
+❯ op run -- tilt up 
 ```
 
 ## Database
