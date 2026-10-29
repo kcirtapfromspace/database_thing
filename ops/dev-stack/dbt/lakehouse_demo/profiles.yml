@@ -20,3 +20,9 @@ lakehouse:
         memory_limit: 1500MB
         temp_directory: /tmp/duckdb_spill
         http_retries: 10
+    # CI: in-memory DuckDB with no S3 access; enough for `dbt compile --target ci`
+    ci:
+      type: duckdb
+      path: ":memory:"
+      threads: 4
+      external_root: "s3://lakehouse/marts"

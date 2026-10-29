@@ -2,12 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
 	"tributary/pkg/config"
 	"tributary/pkg/db"
 	"tributary/pkg/filepkg"
 	"tributary/pkg/web"
-	"fmt"
-	"log"
 
 	"go.uber.org/fx"
 )
