@@ -1,3 +1,6 @@
+image:
+  # vectorized/redpanda was removed from Docker Hub
+  repository: docker.redpanda.com/redpandadata/redpanda
 commonLabels:
   service: redpanda
 console:

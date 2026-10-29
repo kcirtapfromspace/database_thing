@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: stg_shop__customers
+    description: Current state of each customer account (deleted accounts excluded).
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+  - name: stg_shop__products
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+  - name: stg_shop__orders
+    description: Current state of each order.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [placed, paid, shipped, delivered, refunded, cancelled, payment_failed]
+  - name: stg_shop__order_items
+    columns:
+      - name: order_item_id
+        tests: [unique, not_null]
+      - name: order_id
+        tests:
+          - relationships:
+              to: ref('stg_shop__orders')
+              field: order_id
+  - name: stg_shop__payments
+    description: Every payment attempt, with its latest status.
+    columns:
+      - name: payment_id
+        tests: [unique, not_null]
+  - name: stg_shop__shipments
+    columns:
+      - name: shipment_id
+        tests: [unique, not_null]
+  - name: stg_shop__refunds
+    columns:
+      - name: refund_id
+        tests: [unique, not_null]
+  - name: stg_shop__order_status_changes
+    description: Order status transitions reconstructed from CDC updates.
+  - name: stg_events__clickstream
+    description: Storefront clickstream, one row per event.
+    columns:
+      - name: event_id
+        tests: [unique, not_null]

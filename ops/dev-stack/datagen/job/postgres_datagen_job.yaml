@@ -17,12 +17,9 @@ spec:
         # command: ["psql"]
         command: ["python3", "user_payments_generator.py"]
         # args: ["-U", "postgres", "-h", "postgres-db", "-f", "/etc/go-loader/go-loader.sql"]
-        env:
-        - name: PGPASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_PASSWORD
+        envFrom:
+        - secretRef:
+            name: postgres-secret
       restartPolicy: Never
   events:
   - type: Normal

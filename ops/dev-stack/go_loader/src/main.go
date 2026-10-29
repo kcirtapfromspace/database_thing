@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"database_thing/pkg/config"
-	"database_thing/pkg/db"
-	"database_thing/pkg/filepkg"
-	"database_thing/pkg/web"
+	"tributary/pkg/config"
+	"tributary/pkg/db"
+	"tributary/pkg/filepkg"
+	"tributary/pkg/web"
 	"fmt"
 	"log"
 

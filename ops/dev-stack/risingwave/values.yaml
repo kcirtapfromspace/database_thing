@@ -1,0 +1,33 @@
+# RisingWave in standalone mode (meta + compute + frontend + compactor in one pod).
+# Catalog in SQLite on a volume; streaming state (Hummock) in the MinIO "risingwave" bucket.
+standalone:
+  enabled: true
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 3Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: meta
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+  extraVolumeMounts:
+    - name: meta
+      mountPath: /risingwave/meta
+metaStore:
+  sqlite:
+    enabled: true
+    path: /risingwave/meta/risingwave.db
+stateStore:
+  minio:
+    enabled: true
+    endpoint: minio.minio.svc.cluster.local:9000
+    bucket: risingwave
+    authentication:
+      username: rootuser
+      password: rootpass123

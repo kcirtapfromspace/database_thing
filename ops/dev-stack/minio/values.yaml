@@ -3,13 +3,14 @@ clusterDomain: miniocluster.local
 ## Set default image, imageTag, and imagePullPolicy. mode is used to indicate the
 ##
 image:
-  repository: quay.io/minio/minio
-  tag: RELEASE.2023-04-13T03-08-07Z
+  # MinIO no longer publishes public images on quay.io / Docker Hub; use Chainguard's build
+  repository: cgr.dev/chainguard/minio
+  tag: latest-dev
   pullPolicy: IfNotPresent
 
 mcImage:
-  repository: quay.io/minio/mc
-  tag: RELEASE.2023-04-12T02-21-51Z
+  repository: cgr.dev/chainguard/minio-client
+  tag: latest-dev
   pullPolicy: IfNotPresent
 
 mode: standalone ## other supported values are "standalone"
@@ -31,8 +32,10 @@ replicas: 1
 ## Enable persistence using Persistent Volume Claims
 ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
 ##
+# the lakehouse, Argo artifacts and RisingWave state all live here; keep them across pod restarts
 persistence:
-  enabled: false
+  enabled: true
+  size: 20Gi
 resources:
   requests:
     memory: "256Mi"
@@ -122,6 +125,11 @@ buckets:
     # bucket [true|false] NOTE: versioning is enabled by default if you use locking
     objectlocking: false
     
+  - name: risingwave
+    policy: none
+    purge: false
+    versioning: false
+    objectlocking: false
   - name: argo-artifacts
     policy: public
     purge: false
@@ -139,3 +147,11 @@ makeBucketJob:
       memory: 50Mi
   # Command to run after the main command on exit
   exitCommand: ""
+
+## Chainguard mc runs as non-root; the chart's setup scripts write mc config under /etc/minio
+postJob:
+  securityContext:
+    enabled: true
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0

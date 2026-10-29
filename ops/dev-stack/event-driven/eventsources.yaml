@@ -1,0 +1,48 @@
+# New order changes landed in the lakehouse (the sink flushes about once a minute).
+# Watching one topic's prefix gives one event per flush rather than one per topic.
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: lakehouse
+  namespace: argo
+spec:
+  template:
+    serviceAccountName: argo-events-runner
+  minio:
+    raw-orders-landed:
+      bucket:
+        name: lakehouse
+      endpoint: minio.minio.svc.cluster.local:9000
+      events: ["s3:ObjectCreated:*"]
+      filter:
+        prefix: raw/cdc.shop.orders/
+        suffix: .parquet
+      insecure: true
+      accessKey:
+        name: argo-secrets
+        key: S3_ARTIFACT_ACCESS_KEY
+      secretKey:
+        name: argo-secrets
+        key: S3_ARTIFACT_SECRET_KEY
+---
+# Incident signals emitted by RisingWave's anomaly detection
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: anomalies
+  namespace: argo
+spec:
+  template:
+    serviceAccountName: argo-events-runner
+  kafka:
+    signal:
+      url: redpanda-0.redpanda.kafka.svc.cluster.local:9093
+      topic: alerts.anomalies
+      jsonBody: true
+      consumerGroup:
+        groupName: argo-events-anomalies
+        oldest: false
+      connectionBackoff:
+        duration: 10s
+        steps: 10
+        factor: 1.5

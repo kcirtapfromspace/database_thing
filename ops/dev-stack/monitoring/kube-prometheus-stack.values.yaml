@@ -1,0 +1,41 @@
+grafana:
+  # helm template re-randomizes the password on every Tiltfile load, so pin it
+  adminPassword: prom-operator
+  grafana.ini:
+    # local dev: skip the login (Grafana is only reachable via the localhost port-forward)
+    auth.anonymous:
+      enabled: true
+      org_role: Admin
+  additionalDataSources:
+    # live materialized views over the Redpanda streams (Postgres wire protocol)
+    - name: RisingWave
+      uid: risingwave
+      type: grafana-postgresql-datasource
+      url: risingwave.risingwave.svc.cluster.local:4567
+      user: root
+      jsonData:
+        database: dev
+        sslmode: disable
+        postgresVersion: 1400
+
+prometheus:
+  prometheusSpec:
+    # scrape every ServiceMonitor/PodMonitor in the cluster, not just this chart's
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+# kind binds these control-plane metrics endpoints to 127.0.0.1, so Prometheus can't scrape them
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+defaultRules:
+  disabled:
+    # kind nodes inside Docker Desktop never report NTP sync, so this alert always fires
+    NodeClockNotSynchronising: true

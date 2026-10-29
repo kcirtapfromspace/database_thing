@@ -1,0 +1,11 @@
+# Argo Events routes events between EventSources and Sensors over Redpanda,
+# so orchestration rides the same streaming backbone as the data.
+apiVersion: argoproj.io/v1alpha1
+kind: EventBus
+metadata:
+  name: default
+  namespace: argo
+spec:
+  kafka:
+    url: redpanda-0.redpanda.kafka.svc.cluster.local:9093
+    topic: argo-events

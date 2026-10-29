@@ -7,6 +7,9 @@ metadata:
   name: postgres-db
 spec:
   replicas: 1
+  # RWO volume: the old pod must release it before the new one starts
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: postgres-db
@@ -45,10 +48,19 @@ spec:
                   secretKeyRef:
                     name: postgres-secret
                     key: POSTGRES_PORT
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
           image: psql_db:latest
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
           name: postgres-db
           ports:
             - name: postgres-psql
               containerPort: 5432
               protocol: TCP
       restartPolicy: Always
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
