@@ -1,10 +1,10 @@
+server:
+  secure: false
+  # serviceAccount:
+  #   create: true
+  #   name: argo-server
+  extraArgs: ["--auth-mode=server"]
 controller:
-  server:
-    secure: false
-    # serviceAccount:
-    #   create: true
-    #   name: argo-server
-    extraArgs: ["--auth-mode=server"]
   workflowDefaults:
     metadata:
       namespace: argo

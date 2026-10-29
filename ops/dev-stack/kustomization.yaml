@@ -3,17 +3,18 @@ kind: Kustomization
 
 
 resources:
-  - no_op_job.yaml
   # go loader
   - go_loader/go_deployment.yaml
   - go_loader/go_service.yaml
   # postgres db
   - postgres_db/db_deployment.yaml
   - postgres_db/db_service.yaml
+  - postgres_db/db_pvc.yaml
   - postgres_db/job/go_loader_sql_configmap.yaml  
   - postgres_db/job/create_go_loader_user_job.yaml 
-  # datagen
-  - datagen/job/postgres_datagen_job.yaml 
+  # shopgen: synthetic e-commerce traffic (replaces the datagen batch job)
+  - shopgen/k8s/deployment.yaml
+  - shopgen/k8s/service.yaml
   # evidence_dev
   - evidence.dev/ed_deployment.yaml 
   - evidence.dev/ed_service.yaml 
@@ -24,17 +25,38 @@ resources:
   - debezium/service.yaml
   - debezium/job/configure_kafka_connectors.yaml
   # - py_app/py_service.yaml
+  # risingwave: streaming SQL applied after the chart is up
+  - risingwave/ddl-job.yaml
+  # event-driven orchestration: Argo Events over Redpanda triggers dbt refreshes and incident response
+  - event-driven/eventbus.yaml
+  - event-driven/eventsources.yaml
+  - event-driven/sensors.yaml
+  - event-driven/rbac.yaml
+  - event-driven/workflow-templates.yaml
+  # monitoring: scrape Redpanda, Argo and Argo Events; Grafana dashboard
+  - monitoring/podmonitors.yaml
   #argo
   # - argo/sa.yaml
   # - argo/secrets.yaml
   # - argo/workflows/deequ_quality_checks.yaml
 
 configMapGenerator:
+  - name: grafana-dashboard-streaming-ops
+    files:
+      - monitoring/dashboards/streaming-ops.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+  - name: risingwave-streaming-sql
+    namespace: risingwave
+    files:
+      - risingwave/streaming.sql
   - name: kafka-config
     namespace: kafka
     files:
-      - debezium/config/s3-sink.json
-      - debezium/config/pg-src.json
+      - debezium/config/shop-cdc.json
+      - debezium/config/lakehouse-sink.json
       
 secretGenerator:
 # go loader

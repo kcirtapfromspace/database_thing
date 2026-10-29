@@ -1,0 +1,130 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dbt-lakehouse
+  namespace: argo
+  annotations:
+    workflows.argoproj.io/description: >-
+      Rebuild the lakehouse marts with dbt + DuckDB (models and tests). Submitted by the
+      lakehouse-refresh sensor whenever new order changes land in MinIO.
+spec:
+  serviceAccountName: argo-workflow
+  entrypoint: dbt-build
+  synchronization:
+    mutex:
+      name: dbt-lakehouse
+  ttlStrategy:
+    secondsAfterSuccess: 900
+    secondsAfterFailure: 86400
+  arguments:
+    parameters:
+      - name: triggered-by
+        value: manual
+  templates:
+    - name: dbt-build
+      inputs:
+        parameters:
+          - name: triggered-by
+      container:
+        image: ghcr.io/kcirtapfromspace/tributary/dbt:latest
+        # explicit, so the emissary executor need not look up the image entrypoint in the registry
+        command: ["dbt"]
+        args: ["build", "--vars", "{triggered_by: '{{inputs.parameters.triggered-by}}'}"]
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1Gi
+          limits:
+            memory: 3Gi
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: incident-response
+  namespace: argo
+  annotations:
+    workflows.argoproj.io/description: >-
+      Opened by the incident-response sensor when RisingWave flags an anomaly: records the
+      incident, then snapshots the live streaming state into the lakehouse as evidence.
+spec:
+  serviceAccountName: argo-workflow
+  entrypoint: respond
+  ttlStrategy:
+    secondsAfterSuccess: 3600
+    secondsAfterFailure: 86400
+  arguments:
+    parameters:
+      - name: alert-type
+      - name: subject
+      - name: incident-window
+  templates:
+    - name: respond
+      steps:
+        - - name: open-incident
+            template: open-incident
+        - - name: capture-evidence
+            template: capture-evidence
+
+    - name: open-incident
+      script:
+        image: postgres:15-alpine
+        command: [sh]
+        source: |
+          psql -h risingwave.risingwave.svc.cluster.local -p 4567 -U root -d dev -v ON_ERROR_STOP=1 \
+            -v wf='{{workflow.name}}' \
+            -v alert_type='{{workflow.parameters.alert-type}}' \
+            -v subject='{{workflow.parameters.subject}}' \
+            -v incident_window='{{workflow.parameters.incident-window}}' <<'SQL'
+          INSERT INTO incidents
+          SELECT :'wf', :'alert_type', :'subject', :'incident_window'::timestamptz,
+                 coalesce((SELECT summary FROM mv_alerts
+                           WHERE alert_type = :'alert_type' AND subject = :'subject'
+                           ORDER BY observed_at DESC LIMIT 1), 'no detail'),
+                 now();
+          FLUSH;
+          SELECT workflow, alert_type, subject, summary FROM incidents WHERE workflow = :'wf';
+          SQL
+
+    - name: capture-evidence
+      script:
+        image: postgres:15-alpine
+        command: [sh]
+        source: |
+          {
+            echo "Incident {{workflow.name}}"
+            echo "Signal: {{workflow.parameters.alert-type}} / {{workflow.parameters.subject}} / window {{workflow.parameters.incident-window}}"
+            echo
+            psql -h risingwave.risingwave.svc.cluster.local -p 4567 -U root -d dev <<'SQL'
+          \echo '== Alerts in the last 30 minutes'
+          SELECT alert_type, subject, observed_at, attempts, declines, decline_rate, summary
+          FROM mv_alerts WHERE observed_at > now() - INTERVAL '30 minutes' ORDER BY observed_at DESC LIMIT 20;
+          \echo '== Payments by provider, last 15 minutes'
+          SELECT window_start, provider, sum(attempts) AS attempts, sum(declines) AS declines,
+                 sum(processor_errors) AS processor_errors, sum(fraud_declines) AS fraud_declines
+          FROM mv_payments_per_minute WHERE window_start > now() - INTERVAL '15 minutes'
+          GROUP BY 1, 2 ORDER BY 1 DESC, 2;
+          \echo '== Highest-velocity customers, last 10 minutes'
+          SELECT customer_id, max(attempts) AS attempts, max(declines) AS declines,
+                 max(card_countries) AS card_countries, round(max(max_risk)::numeric, 2) AS max_risk
+          FROM mv_customer_velocity_5m WHERE window_end > now() - INTERVAL '10 minutes'
+          GROUP BY 1 ORDER BY 2 DESC LIMIT 10;
+          SQL
+          } > /tmp/evidence.txt
+          cat /tmp/evidence.txt
+      outputs:
+        artifacts:
+          - name: evidence
+            path: /tmp/evidence.txt
+            archive:
+              none: {}
+            s3:
+              endpoint: minio.minio.svc.cluster.local:9000
+              insecure: true
+              bucket: lakehouse
+              key: "incidents/{{workflow.name}}.txt"
+              accessKeySecret:
+                name: argo-secrets
+                key: S3_ARTIFACT_ACCESS_KEY
+              secretKeySecret:
+                name: argo-secrets
+                key: S3_ARTIFACT_SECRET_KEY

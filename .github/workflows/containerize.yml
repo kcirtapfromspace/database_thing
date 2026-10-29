@@ -28,6 +28,7 @@ jobs:
           - deequ
           - go_loader
           - gx
+          - shopgen
 
     steps:
       - name: Checkout repository

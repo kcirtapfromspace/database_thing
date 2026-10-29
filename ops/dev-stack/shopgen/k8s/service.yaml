@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopgen
+  labels:
+    app.kubernetes.io/name: shopgen
+spec:
+  selector:
+    app.kubernetes.io/name: shopgen
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: shopgen
+  labels:
+    app.kubernetes.io/name: shopgen
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shopgen
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -13,7 +13,7 @@ import (
 
 	"go.uber.org/fx"
 
-	"database_thing/pkg/db"
+	"tributary/pkg/db"
 
 	"github.com/gin-gonic/gin"
 )

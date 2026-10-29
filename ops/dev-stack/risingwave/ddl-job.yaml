@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: risingwave-ddl
+  namespace: risingwave
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: apply
+          image: postgres:15-alpine
+          command: ["/bin/sh", "-c"]
+          # retries until the CDC topics and their Avro schemas exist (shopgen + Debezium create them)
+          args:
+            - |
+              for i in $(seq 1 60); do
+                psql -h risingwave.risingwave.svc.cluster.local -p 4567 -U root -d dev \
+                  -v ON_ERROR_STOP=1 -f /sql/streaming.sql && exit 0
+                echo "retrying in 10s ($i)"; sleep 10
+              done
+              exit 1
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: risingwave-streaming-sql
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: risingwave
+  namespace: risingwave
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: risingwave
+  podMetricsEndpoints:
+    - port: metrics
+      interval: 15s

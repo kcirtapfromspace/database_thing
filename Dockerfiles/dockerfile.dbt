@@ -1,9 +1,9 @@
-# Chainguard Python image for hardened dbt builds
-# https://images.chainguard.dev/directory/image/python/overview
+# Debian slim Python: the Argo dbt-process-template runs this image via /bin/sh,
+# and duckdb==0.9.2 only ships wheels up to Python 3.12
 ARG PYTHON_VERSION=3.11
 
-# Build stage with dev tools
-FROM cgr.dev/chainguard/python:latest-dev AS builder
+# Build stage
+FROM python:${PYTHON_VERSION}-slim AS builder
 
 WORKDIR /app
 
@@ -13,16 +13,21 @@ COPY ./ops/dev-stack/dbt/requirements.txt .
 # Install dependencies with pip
 RUN pip install --no-cache-dir -r requirements.txt --user
 
-# Final stage - minimal runtime image
-FROM cgr.dev/chainguard/python:latest AS final
+# Final stage
+FROM python:${PYTHON_VERSION}-slim AS final
 
 ENV PYTHONIOENCODING=utf-8
 ENV LANG=C.UTF-8
-ENV PATH="/home/nonroot/.local/bin:$PATH"
+ENV PATH="/root/.local/bin:$PATH"
 
 # Copy installed packages from builder
-COPY --from=builder /home/nonroot/.local /home/nonroot/.local
+COPY --from=builder /root/.local /root/.local
 
-WORKDIR /app
+# the lakehouse dbt project is baked in so event-triggered runs need no git clone or network;
+# packages are vendored and the DuckDB httpfs extension is preinstalled
+COPY ./ops/dev-stack/dbt/lakehouse_demo /opt/dbt/lakehouse
+WORKDIR /opt/dbt/lakehouse
+ENV DBT_PROFILES_DIR=/opt/dbt/lakehouse
+RUN dbt deps && python -c "import duckdb; duckdb.sql('INSTALL httpfs')"
 
 ENTRYPOINT ["dbt"]

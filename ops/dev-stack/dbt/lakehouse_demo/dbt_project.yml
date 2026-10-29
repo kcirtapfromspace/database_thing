@@ -1,39 +1,31 @@
 name: lakehouse
-version: '1.0'
+version: '2.0'
 profile: lakehouse
 config-version: 2
-require-dbt-version: [">=1.0.0", "<2.0.0"]
-model-paths:
-  - models
-analysis-paths:
-  - analysis
-test-paths:
-  - tests
-seed-paths:
-  - data
-macro-paths:
-  - macros
-snapshot-paths:
-  - snapshots
-target-path: target
-log-path: logs
-packages-install-path: dbt_packages
-clean-targets:
-  - target
-  - dbt_packages
-  - logs
+require-dbt-version: [">=1.7.0", "<2.0.0"]
 
-# models:
-#   users:
-#     user_latest_payments:
-#       +materialized: view
-#   payments:
-#     latest_payments_per_user:
-#       +materialized: view
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: target
+packages-install-path: dbt_packages
+clean-targets: [target, dbt_packages, logs]
+
+flags:
+  send_anonymous_usage_stats: false
 
 vars:
-  enable_s3_export: true        # set to true to export files to parquet
-  # enable_local_export: false        # set to true to export files to parquet
-on-run-end: 
-  - "{{s3_export_to_parquet( var('enable_s3_export') ) }}"
+  # set by the Argo workflow so marts record what triggered the refresh
+  triggered_by: manual
 
+models:
+  lakehouse:
+    # tables, not views: each run reads every raw source from S3 exactly once
+    staging:
+      +materialized: table
+    intermediate:
+      +materialized: table
+    marts:
+      # written back to the lakehouse as Parquet (s3://lakehouse/marts/<model>.parquet)
+      +materialized: external
+      +format: parquet

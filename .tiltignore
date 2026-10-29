@@ -1,1 +1,4 @@
-ops/dev-stack/evidence.dev
+# generated Evidence artifacts; editing pages/ or sources still rebuilds the site
+ops/dev-stack/evidence.dev/**/node_modules
+ops/dev-stack/evidence.dev/**/.evidence
+ops/dev-stack/evidence.dev/**/build

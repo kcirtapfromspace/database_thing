@@ -1,7 +1,11 @@
-FROM node:18-alpine3.14 as base
+# Debian base (not alpine): duckdb@0.7.1 has no musl or linux-arm64 prebuilt,
+# so it compiles from source and needs the python3/make/g++ toolchain bookworm ships
+FROM node:18-bookworm as base
 ARG WORKSPACE_DIR=/evidence-workspace 
+ENV JOBS=4
 
-RUN apk add --no-cache bash curl wget nano git xdg-utils  && \
+RUN apt-get update && apt-get install -y --no-install-recommends nano xdg-utils && \
+    rm -rf /var/lib/apt/lists/* && \
     npm install -g degit && \
     mkdir -p ${WORKSPACE_DIR}
 
@@ -9,8 +13,17 @@ FROM base as evidence_build
 
 WORKDIR ${WORKSPACE_DIR}
 
+# install deps before copying pages so report edits don't recompile duckdb
+COPY ops/dev-stack/evidence.dev/reports/package.json ${WORKSPACE_DIR}/
+RUN npm install
+# Evidence caches query results per clock hour; cache per minute instead so pages pick up
+# each event-driven dbt refresh of the lakehouse marts within a minute
+RUN sed -i 's/^\(\s*\)new Date().getHours()$/\1new Date().getHours(),\n\1new Date().getMinutes()/' \
+        node_modules/@evidence-dev/db-orchestrator/index.cjs && \
+    grep -q 'new Date().getMinutes()' node_modules/@evidence-dev/db-orchestrator/index.cjs
 COPY ops/dev-stack/evidence.dev/reports/ ${WORKSPACE_DIR}/
-RUN npm install && npm run build
+# no build step: the container runs the dev server, which compiles pages and runs queries on request
+# (queries need the in-cluster database connection, which isn't available during docker build)
 
 # FROM gcr.io/distroless/nodejs18-debian11 as production
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "4000"]

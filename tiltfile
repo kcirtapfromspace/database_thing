@@ -41,11 +41,12 @@ GITHUB_ACCESS_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN")
 
 # Build Docker Container Images
 docker_build('evidence_dev', '.', dockerfile='Dockerfiles/Dockerfile.evidence_dev')
-docker_build('datagen', '.', dockerfile='Dockerfiles/Dockerfile.datagen')
+docker_build('shopgen', '.', dockerfile='Dockerfiles/Dockerfile.shopgen', only=['ops/dev-stack/shopgen', 'Dockerfiles/dockerfile.shopgen'])
 docker_build('dbz_connect', '.', dockerfile='Dockerfiles/Dockerfile.debezium')
 docker_build('go_loader', '.', dockerfile='Dockerfiles/Dockerfile.go_loader')
 docker_build('psql_db', '.', dockerfile='Dockerfiles/Dockerfile.psql_db')
-# docker_build('dbt_argo', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final', match_in_env_vars=True,extra_tag=["dbt-argo:local", "ctlptl-registry:5000/dbt-argo:latest"]) # NOTE: container is now built with github actions
+# dbt image for the Argo dbt-process-template; built locally and injected via k8s_kind below
+docker_build('ghcr.io/kcirtapfromspace/tributary/dbt', '.', dockerfile='Dockerfiles/Dockerfile.dbt', target='final')
 # docker_build('py_deequ', '.', dockerfile='Dockerfiles/Dockerfile.deequ', target='final', match_in_env_vars=True,extra_tag=["deequ:local"]) # NOTE: container is now built with github actions
 # docker_build('py_gx', '.', dockerfile='Dockerfiles/Dockerfile.gx', target='final' ,match_in_env_vars=True,extra_tag=["gx:local"]) # NOTE: container is now built with github actions
 
@@ -54,20 +55,32 @@ docker_build('psql_db', '.', dockerfile='Dockerfiles/Dockerfile.psql_db')
 k8s_yaml(kustomize("./ops/dev-stack"))
 k8s_resource('postgres-db', port_forwards=[5432], labels="psql_db")
 k8s_resource('go-loader', port_forwards=[8000], labels="go_loader")
+
+# Synthetic e-commerce traffic: Postgres writes (captured by Debezium) + clickstream to Redpanda
+k8s_resource('shopgen', port_forwards=['8090:8000'], labels="shop", resource_deps=['postgres-db', 'redpanda'],
+             links=[link('http://localhost:8090/status', 'generator status')])
+# One-click incident injection for demos: watch them surface in RisingWave, Grafana and Argo
+for incident in ['payment_outage', 'fraud_burst', 'traffic_spike']:
+    local_resource('incident-' + incident.replace('_', '-'),
+                   'curl -sf -X POST "localhost:8090/incident/%s?minutes=5"' % incident,
+                   labels="shop", resource_deps=['shopgen'], trigger_mode=TRIGGER_MODE_MANUAL, auto_init=False)
 # k8s_resource('py-gx',  labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL)# dummy resource to trigger gx container build
 # k8s_resource('py-deequ', labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL )# dummy resource to trigger gx container build
 # k8s_resource('dbt-argo', labels="argo_workflow", auto_init=False, trigger_mode=TRIGGER_MODE_MANUAL) # dummy resource to trigger gx container build
 
-k8s_resource('evidence-dev', labels="analytics", port_forwards=['4000'])
+k8s_resource('evidence-dev', labels="analytics", port_forwards=['4001:4000'])
 
 
 # Install Prometheus Operator
 # helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 load('ext://helm_remote', 'helm_remote')
-helm_remote('kube-prometheus-stack',  repo_url='https://prometheus-community.github.io/helm-charts')
+helm_remote('kube-prometheus-stack',  repo_url='https://prometheus-community.github.io/helm-charts', version='92.14.1',
+            values=['./ops/dev-stack/monitoring/kube-prometheus-stack.values.yaml'])
 k8s_resource("kube-prometheus-stack-prometheus-node-exporter", labels="prometheus")
 k8s_resource("kube-prometheus-stack-grafana", port_forwards=[3000], labels="prometheus")
-k8s_resource("kube-prometheus-stack-operator", port_forwards=[9090], labels="prometheus")
+k8s_resource("kube-prometheus-stack-operator", labels="prometheus")
+# Prometheus pods are created by the operator, not Tilt, so forward to the service directly
+local_resource("prometheus-ui", serve_cmd="kubectl port-forward svc/kube-prometheus-stack-prometheus 9090:9090", resource_deps=["kube-prometheus-stack-operator"], labels="prometheus", links=["http://localhost:9090"])
 k8s_resource("kube-prometheus-stack-kube-state-metrics", labels="prometheus")
 k8s_resource("kube-prometheus-stack-admission-create", labels="prometheus")
 k8s_resource("kube-prometheus-stack-admission-patch", labels="prometheus")
@@ -101,7 +114,7 @@ load('ext://helm_remote', 'helm_remote')
 values = [
     "./ops/dev-stack/redpanda/console/values.yaml",
             ]
-helm_remote('console', namespace='kafka', repo_url='https://charts.redpanda.com/', values=values)
+helm_remote('console', namespace='kafka', repo_url='https://charts.redpanda.com/', values=values, version='0.7.31')
 
 k8s_resource("redpanda-configuration", labels="kafka",resource_deps=["redpanda"])
 k8s_resource("console",port_forwards=['8080'], labels="kafka",resource_deps=["redpanda" ])
@@ -146,6 +159,14 @@ stringData:
     github_access_token=GITHUB_ACCESS_TOKEN,
 )))
 
+# Install RisingWave: streaming SQL over the Redpanda topics (live funnel, payments, anomaly alerts)
+namespace_create('risingwave')
+helm_remote('risingwave', namespace='risingwave', repo_url='https://risingwavelabs.github.io/helm-charts/',
+            version='0.2.60', values=['./ops/dev-stack/risingwave/values.yaml'])
+k8s_resource('risingwave-standalone', port_forwards=['4566:4567'], labels="streaming", resource_deps=['minio'],
+             links=[link('postgresql://root@localhost:4566/dev', 'psql (RisingWave)')])
+k8s_resource('risingwave-ddl', labels="streaming", resource_deps=['risingwave-standalone', 'shopgen', 'dbz-connect'])
+
 # Install Argo Workflows
 load('ext://namespace', 'namespace_create')
 namespace_create('argo')
@@ -166,11 +187,23 @@ values = [
     "./ops/dev-stack/argo-events/values.yaml",
                 # "server=[serviceAccount.create=false,serviceAccount.name=argo-workflows,service.type=NodePort,extraArgs=[--secure=false]]", "--debug=true"
             ]
-helm_remote('argo-events', namespace='argo', repo_url='https://argoproj.github.io/argo-helm', values=values)
+helm_remote('argo-events', namespace='argo', repo_url='https://argoproj.github.io/argo-helm', values=values, version='2.4.27')
 k8s_resource("argo-events-controller-manager", labels="argo")
 
 # Install Argo Cluster Workflows
 k8s_yaml(helm('./ops/dev-stack/argo/helm/workflows'))
+# Let Tilt inject locally built images into WorkflowTemplates (they have no pods of their own)
+k8s_kind('WorkflowTemplate', image_json_path='{.spec.templates[?(@.container)].container.image}', pod_readiness='ignore')
+
+# Event-driven pipeline: MinIO object events and RisingWave anomaly signals, routed over Redpanda
+k8s_resource(new_name='event-pipeline', labels="event-driven",
+             objects=['default:eventbus', 'lakehouse:eventsource', 'anomalies:eventsource',
+                      'lakehouse-refresh:sensor', 'incident-response:sensor',
+                      'argo-events-runner:serviceaccount', 'argo-events-runner:role',
+                      'argo-events-runner:rolebinding'],
+             resource_deps=['argo-events-controller-manager', 'redpanda', 'minio'])
+k8s_resource('dbt-lakehouse', labels="event-driven")
+k8s_resource('incident-response', labels="event-driven")
 
 script = """\
 CREATE_TOKEN="Bearer $(kubectl create token argo-workflows-server -n argo)"
@@ -179,13 +212,25 @@ echo $CREATE_TOKEN > ./.argo-token.txt
 local_resource("create-argo-server-token", script, resource_deps=["argo-workflows-server"],  labels="argo")
 
 run_argo_workflow = """\
-	eval ARGO_TOKEN=$(cat  ./.argo-token.txt)
-	eval ARGO_IP=$(kubectl get pods --namespace=argo -l="app.kubernetes.io/name=argo-workflows-server" -o=jsonpath="{range .items[*]}{.status.podIP}")
-	eval ARGO_TASK_NAME=$(argo --namespace=argo submit --token "$ARGO_TOKEN" --output=name --from workflowtemplate/data-workflow --parameter ip="$ARGO_IP")
-	echo ARGO_IP=$ARGO_IP
-	echo ARGO_TASK_NAME=$ARGO_TASK_NAME
-	argo --namespace=argo logs $ARGO_TASK_NAME --follow
-    argo --namespace=argo get $ARGO_TASK_NAME --output=json | jq -r '.status.phase' | grep -q 'Succeeded'
+WF=$(kubectl -n argo create -o name -f - <<'EOF'
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lakehouse-manual-
+spec:
+  workflowTemplateRef:
+    name: dbt-lakehouse
+EOF
+)
+echo "submitted $WF"
+while :; do
+  PHASE=$(kubectl -n argo get "$WF" -o jsonpath='{.status.phase}')
+  case "$PHASE" in Succeeded|Failed|Error) break;; esac
+  sleep 5
+done
+kubectl -n argo logs -l workflows.argoproj.io/workflow="${WF#*/}" -c main --prefix --tail=-1
+echo "$WF finished: $PHASE"
+test "$PHASE" = Succeeded
 """
 local_resource("run-argo-workflow", run_argo_workflow, resource_deps=["argo-workflows-server", "create-argo-server-token"],  labels="argo", trigger_mode=TRIGGER_MODE_MANUAL, auto_init=False)
 

@@ -2,7 +2,7 @@ package db_test
 
 import (
 	"database/sql"
-	db_pkg "database_thing/pkg/db"
+	db_pkg "tributary/pkg/db"
 	"fmt"
 	"reflect"
 	"strings"

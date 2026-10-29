@@ -4,22 +4,50 @@ metadata:
   name: configure-kafka-connectors
   namespace: kafka
 spec:
+  backoffLimit: 6
   template:
     spec:
+      initContainers:
+        # pg-src / s3-sink were the original users+payments pipeline; shop-cdc / lakehouse-sink replace them
+        - name: retire-legacy-connectors
+          image: curlimages/curl
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until curl -sf dbz-connect:8083/connectors; do sleep 2; done
+              for c in pg-src s3-sink; do curl -s -X DELETE dbz-connect:8083/connectors/$c; done
+        # an abandoned replication slot makes Postgres retain WAL forever
+        - name: drop-legacy-slot
+          image: postgres:15-alpine
+          env:
+            - name: PGPASSWORD
+              value: postgres
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              for i in 1 2 3 4 5 6; do
+                psql -h postgres-db.default.svc.cluster.local -U postgres -tAc \
+                  "SELECT count(pg_drop_replication_slot(slot_name)) FROM pg_replication_slots WHERE slot_name = 'debezium' AND NOT active" \
+                  && break
+                sleep 5
+              done
       containers:
-      - name: sidecar
-        image: curlimages/curl
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            until curl -s -H "Accept:application/json" dbz-connect:8083/; do sleep 1; done
-            curl -X PUT -H "Content-Type:application/json" dbz-connect:8083/connectors/pg-src/config -d '@/connectors/pg-src.json'
-            curl -X PUT -H "Content-Type:application/json" dbz-connect:8083/connectors/s3-sink/config -d '@/connectors/s3-sink.json'
-        volumeMounts:
-        - name: config
-          mountPath: "/connectors"
+        - name: configure
+          image: curlimages/curl
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until curl -sf dbz-connect:8083/connectors; do sleep 2; done
+              for c in shop-cdc lakehouse-sink; do
+                curl -sf -X PUT -H "Content-Type: application/json" \
+                  dbz-connect:8083/connectors/$c/config -d @/connectors/$c.json || exit 1
+                echo
+              done
+          volumeMounts:
+            - name: config
+              mountPath: /connectors
       restartPolicy: Never
       volumes:
-      - name: config
-        configMap:
-          name: kafka-config
+        - name: config
+          configMap:
+            name: kafka-config

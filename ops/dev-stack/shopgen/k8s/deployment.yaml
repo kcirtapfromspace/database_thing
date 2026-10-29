@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shopgen
+  labels:
+    app.kubernetes.io/name: shopgen
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shopgen
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: shopgen
+    spec:
+      containers:
+        - name: shopgen
+          image: shopgen
+          envFrom:
+            - secretRef:
+                name: postgres-secret
+          env:
+            - name: BACKFILL_DAYS
+              value: "30"
+            - name: SESSIONS_PER_DAY
+              value: "2500"
+            - name: LIVE_SESSIONS_PER_MIN
+              value: "150"
+            - name: AUTO_INCIDENTS
+              value: "false"
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi

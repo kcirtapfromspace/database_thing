@@ -1,3 +1,5 @@
 # DuckDB and dbt dependencies - pinned for reproducibility
-duckdb==0.9.2
-dbt-duckdb==1.7.0
+# duckdb>=0.10 reports platform linux_arm64 on aarch64; 0.9.x wheels ask for
+# linux_arm64_gcc4 extensions, which extensions.duckdb.org no longer hosts
+duckdb==0.10.3
+dbt-duckdb==1.7.5

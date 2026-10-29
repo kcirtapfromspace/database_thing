@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: cdc
+    description: >
+      Debezium change events from the Postgres `shop` schema (Redpanda topics cdc.shop.*),
+      landed in the lakehouse as Parquet by the lakehouse-sink connector. Each row is one
+      change: value.op is c/r (insert), u (update) or d (delete) with before/after images.
+    meta:
+      external_location: "read_parquet('s3://lakehouse/raw/cdc.shop.{name}/*.parquet', union_by_name = true)"
+    tables:
+      - name: customers
+      - name: products
+      - name: orders
+      - name: order_items
+      - name: payments
+      - name: shipments
+      - name: refunds
+
+  - name: events
+    description: Clickstream produced directly to Redpanda (shop.clickstream) by the storefront.
+    meta:
+      external_location: "read_parquet('s3://lakehouse/raw/shop.{name}/*.parquet', union_by_name = true)"
+    tables:
+      - name: clickstream

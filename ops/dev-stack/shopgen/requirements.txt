@@ -1,0 +1,5 @@
+# pinned for reproducibility; all ship python 3.12 linux/arm64 + amd64 wheels
+psycopg[binary]==3.2.3
+confluent-kafka[avro]==2.6.1
+fastavro==1.9.7
+prometheus-client==0.21.0

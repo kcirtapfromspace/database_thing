@@ -1,5 +1,5 @@
-// module github.com/kcirtapfromspace/database_thing
-module database_thing
+// module github.com/kcirtapfromspace/tributary
+module tributary
 
 go 1.19
 

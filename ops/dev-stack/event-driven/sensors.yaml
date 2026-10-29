@@ -1,0 +1,93 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: lakehouse-refresh
+  namespace: argo
+spec:
+  template:
+    serviceAccountName: argo-events-runner
+  dependencies:
+    - name: raw-orders
+      eventSourceName: lakehouse
+      eventName: raw-orders-landed
+  triggers:
+    - template:
+        name: dbt-lakehouse
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: lakehouse-refresh-
+                labels:
+                  pipeline: lakehouse-refresh
+              spec:
+                workflowTemplateRef:
+                  name: dbt-lakehouse
+                arguments:
+                  parameters:
+                    - name: triggered-by
+                      value: unknown
+          parameters:
+            - src:
+                dependencyName: raw-orders
+                dataKey: notification.0.s3.object.key
+              dest: spec.arguments.parameters.0.value
+      rateLimit:
+        unit: Minute
+        requestsPerUnit: 1
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: incident-response
+  namespace: argo
+spec:
+  template:
+    serviceAccountName: argo-events-runner
+  dependencies:
+    - name: signal
+      eventSourceName: anomalies
+      eventName: signal
+  triggers:
+    - template:
+        name: incident-response
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: incident-
+                labels:
+                  pipeline: incident-response
+              spec:
+                workflowTemplateRef:
+                  name: incident-response
+                arguments:
+                  parameters:
+                    - name: alert-type
+                      value: unknown
+                    - name: subject
+                      value: unknown
+                    - name: incident-window
+                      value: unknown
+          parameters:
+            - src:
+                dependencyName: signal
+                dataKey: body.alert_type
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: signal
+                dataKey: body.subject
+              dest: spec.arguments.parameters.1.value
+            - src:
+                dependencyName: signal
+                dataKey: body.incident_window
+              dest: spec.arguments.parameters.2.value
+      rateLimit:
+        unit: Minute
+        requestsPerUnit: 6

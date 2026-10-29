@@ -18,13 +18,15 @@ spec:
   arguments:
     parameters:
     - name: repo
-      value: "kcirtapfromspace/database_thing"  # Replace this with the actual repository URL
+      value: "kcirtapfromspace/tributary"  # Replace this with the actual repository URL
     - name: branch
       value: "main"  # Replace this with the desired branch
     - name: subdir
       value: "ops/dev-stack/dbt/lakehouse_demo"  # Replace this with the desired subdiectory
     - name: enableSlackNotifications
       value: "false"  # Set to "true" to enable notifications, "false" to skip notifications
+    - name: slack-webhook-url
+      value: ""  # Supply at submit time (-p slack-webhook-url=...); never commit the webhook
     - name: dbt-project
       value: "lakehouse_demo"
   templates:
@@ -40,7 +42,7 @@ spec:
           - name: WORKFLOW_NAME
             value: "{{ `{{workflow.name}}` }}"
           - name: SLACK_WEBHOOK_URL
-            value: "https://hooks.slack.com/services/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"
+            value: "{{ `{{workflow.parameters.slack-webhook-url}}` }}"
         when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
       - name: gh-sparse-clone-template
         templateRef:
@@ -88,5 +90,5 @@ spec:
               - name: WORKFLOW_NAME
                 value: "{{ `{{workflow.name}}` }}"
               - name: SLACK_WEBHOOK_URL
-                value: "https://hooks.slack.com/services/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"
+                value: "{{ `{{workflow.parameters.slack-webhook-url}}` }}"
           when: "{{ `{{workflow.parameters.enableSlackNotifications}}` }} == true"
