@@ -20,14 +20,16 @@ jobs:
       contents: read
       packages: write
     strategy:
+      # build every image even if one fails, so each failure is visible
+      fail-fast: false
       matrix:
+        # deequ and gx are left out: the data quality prototypes they package do not run,
+        # and their images no longer build (EOL bullseye repos; pandas 1.5.3 on current Python)
         dockerfile:
           - dbt
           - datagen
           - debezium
-          - deequ
           - go_loader
-          - gx
           - shopgen
 
     steps:
@@ -42,9 +44,11 @@ jobs:
           #   suffix=-${{ github.event_name }}
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
+          # plain type=sha: a {{branch}} prefix is empty on pull_request and tag events,
+          # which produced the invalid tag "<image>:-<sha>"
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
+            type=sha
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern=v{{version}}

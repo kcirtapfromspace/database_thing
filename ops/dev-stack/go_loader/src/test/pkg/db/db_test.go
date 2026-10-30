@@ -2,12 +2,12 @@ package db_test
 
 import (
 	"database/sql"
-	db_pkg "tributary/pkg/db"
 	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+	db_pkg "tributary/pkg/db"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/lib/pq"
@@ -267,7 +267,7 @@ func TestDetermineTableSchema(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		dataType, err := db_pkg.DetermineTableSchema(test.columnData, test.percentages)
+		dataType, err := db_pkg.DetermineTableSchema(test.columnData, test.percentages, map[string]db_pkg.DataTypeInfo{})
 		if err != nil {
 			t.Errorf("Test %d: Unexpected error: %v", i, err)
 			continue
@@ -523,7 +523,7 @@ func TestCalculateTypePercentages(t *testing.T) {
 		"UUID":         23.809523809523807,
 		"VARCHAR(255)": 28.57142857142857,
 	}
-	typePercentages, err := db_pkg.CalculateTypePercentages(dataTypeCounts, totalCount)
+	typePercentages, err := db_pkg.CalculateTypePercentages(typeCounts(dataTypeCounts), totalCount)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -540,7 +540,7 @@ func TestCalculateTypePercentages(t *testing.T) {
 		"VARCHAR(255)": 6,
 	}
 	totalCount = 16
-	_, err = db_pkg.CalculateTypePercentages(dataTypeCounts, totalCount)
+	_, err = db_pkg.CalculateTypePercentages(typeCounts(dataTypeCounts), totalCount)
 	if err == nil {
 		t.Errorf("expected error got none, got %s", err)
 	}
@@ -555,7 +555,7 @@ func TestCalculateTypePercentages(t *testing.T) {
 		"VARCHAR(255)": 6,
 	}
 	totalCount = 0
-	_, err = db_pkg.CalculateTypePercentages(dataTypeCounts, totalCount)
+	_, err = db_pkg.CalculateTypePercentages(typeCounts(dataTypeCounts), totalCount)
 	if err == nil {
 		t.Errorf("expected error got none, got %s", err)
 	}
@@ -563,7 +563,7 @@ func TestCalculateTypePercentages(t *testing.T) {
 	// nil dataTypeCounts
 	dataTypeCounts = nil
 	totalCount = 0
-	_, err = db_pkg.CalculateTypePercentages(dataTypeCounts, totalCount)
+	_, err = db_pkg.CalculateTypePercentages(typeCounts(dataTypeCounts), totalCount)
 	if err == nil {
 		t.Errorf("expected error got none, got %s", err)
 	}
@@ -735,4 +735,13 @@ func TestPopulateTable(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
 	}
+}
+
+// typeCounts adapts plain per-type counts to the DataTypeInfo map CalculateTypePercentages takes.
+func typeCounts(m map[string]int) map[string]db_pkg.DataTypeInfo {
+	out := make(map[string]db_pkg.DataTypeInfo, len(m))
+	for k, v := range m {
+		out[k] = db_pkg.DataTypeInfo{DataType: k, DataTypeCounters: v}
+	}
+	return out
 }
