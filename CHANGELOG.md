@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.3 (2026-10-30)
+
+## What's Changed
+* Evidence.dev by @kcirtapfromspace in https://github.com/kcirtapfromspace/tributary/pull/43
+* feat: production-ready security, CI/CD, and versioning by @kcirtapfromspace in https://github.com/kcirtapfromspace/tributary/pull/45
+* feat: event-driven streaming stack; rename project to tributary by @kcirtapfromspace in https://github.com/kcirtapfromspace/tributary/pull/46
+* fix(ci): repair the five failing CI jobs by @kcirtapfromspace in https://github.com/kcirtapfromspace/tributary/pull/47
+
+
+**Full Changelog**: https://github.com/kcirtapfromspace/tributary/compare/v0.1.2...v0.1.3
+
 ## 0.1.2 (2023-04-29)
 
 **Full Changelog**: https://github.com/kcirtapfromspace/tributary/compare/v0.1.1...v0.1.2
