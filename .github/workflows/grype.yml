@@ -40,7 +40,7 @@ jobs:
             registry-password: ${{ secrets.GITHUB_TOKEN }}
     
         - name:  invoke the Grype scanner
-          uses: anchore/scan-action@v3
+          uses: anchore/scan-action@v7
           with:
             image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.dockerfile }}
             registry-username: ${{ github.actor }}
